@@ -53,7 +53,7 @@ const updatePolicePersonnel = async (req, res) => {
 const deletePolicePersonnel = async (req, res) => {
   try {
     const deleted = await PolicePersonnel.destroy({
-      where: { id: req.params.id }
+      where: { security_personnel_id: req.params.id }
     });
 
     if (!deleted) {

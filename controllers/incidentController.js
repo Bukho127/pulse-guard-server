@@ -11,7 +11,7 @@ const createIncident = async (req, res) => {
       return res.status(400).json({ message: 'Video file is required' });
     }
 
-    const video_url = await uploadToBlob(req.file.buffer, req.file.originalname);
+    const video_url = await uploadToBlob(req.file);
 
     const incident = await Incident.create({
       user_id,

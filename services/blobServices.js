@@ -1,4 +1,4 @@
-import { BlobServiceClient } from "@azure/storage-blob";
+const { BlobServiceClient } = require("@azure/storage-blob");
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(
     process.env.AZURE_STORAGE_CONNECTION_STRING
@@ -6,7 +6,7 @@ const blobServiceClient = BlobServiceClient.fromConnectionString(
 
 const containerName = "incidents";
 
-export const uploadToBlob = async (file) => {
+const uploadToBlob = async (file) => {
     const containerClient = blobServiceClient.getContainerClient(containerName);
 
     const blobName = `incident-${Date.now()}-${file.originalname}`;
@@ -19,3 +19,5 @@ export const uploadToBlob = async (file) => {
 
     return blockBlobClient.url;
 };
+
+module.exports = { uploadToBlob };

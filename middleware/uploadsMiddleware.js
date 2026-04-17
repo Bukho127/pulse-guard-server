@@ -1,13 +1,15 @@
-import multer from "multer";
-import ffmpeg from "fluent-ffmpeg";
-import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
-import { Readable, PassThrough } from "stream";
+
+const multer = require('multer');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+const { Readable, PassThrough } = require('stream');
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+const compressionEnabled = process.env.ENABLE_VIDEO_COMPRESSION !== 'false';
 
 const storage = multer.memoryStorage();
 
-export const upload = multer({
+const upload = multer({
     storage,
     limits: {
         fileSize: 50 * 1024 * 1024
@@ -29,14 +31,22 @@ export const upload = multer({
 });
 
 // Compression middleware — use this after upload
-export const compressVideo = (req, res, next) => {
+const compressVideo = (req, res, next) => {
     if (!req.file) return next();
+    if (!compressionEnabled) return next();
 
     const inputStream = Readable.from(req.file.buffer);
     const outputStream = new PassThrough();
     const chunks = [];
+    let completed = false;
 
-    ffmpeg(inputStream)
+    const finishOnce = (handler) => {
+        if (completed) return;
+        completed = true;
+        handler();
+    };
+
+    const command = ffmpeg(inputStream)
         .videoCodec('libx264')
         .audioCodec('aac')
         .size('1280x720')
@@ -51,12 +61,23 @@ export const compressVideo = (req, res, next) => {
     outputStream.on('data', chunk => chunks.push(chunk));
 
     outputStream.on('end', () => {
-        req.file.buffer = Buffer.concat(chunks);
-        req.file.size = req.file.buffer.length;
-        next();
+        finishOnce(() => {
+            req.file.buffer = Buffer.concat(chunks);
+            req.file.size = req.file.buffer.length;
+            req.file.mimetype = 'video/mp4';
+            next();
+        });
     });
 
     outputStream.on('error', err => {
-        res.status(500).json({ error: 'Video compression failed: ' + err.message });
+        console.error('Compressed video stream failed, uploading original file instead:', err.message);
+        finishOnce(() => next());
+    });
+
+    command.on('error', (err) => {
+        console.error('Video compression failed, uploading original file instead:', err.message);
+        finishOnce(() => next());
     });
 };
+
+module.exports = { upload, compressVideo };
