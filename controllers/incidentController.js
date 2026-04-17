@@ -1,14 +1,21 @@
 const Incident = require('../models/incidentModel');
 const User = require('../models/userModel');
+const { uploadToBlob } = require('../services/blobServices');
 
 // CREATE
 const createIncident = async (req, res) => {
   try {
     const user_id = req.user.user_id; // from JWT middleware
 
+    if (!req.file) {
+      return res.status(400).json({ message: 'Video file is required' });
+    }
+
+    const video_url = await uploadToBlob(req.file.buffer, req.file.originalname);
+
     const incident = await Incident.create({
       user_id,
-      video_url: req.body.video_url,
+      video_url,
       latitude: req.body.latitude,
       longitude: req.body.longitude,
       address: req.body.address,

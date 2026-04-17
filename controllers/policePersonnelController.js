@@ -1,6 +1,6 @@
 const PolicePersonnel = require('../models/policePersonnelModel');
 
-// CREATE
+
 const addPolicePersonnel = async (req, res) => {
   try {
     const officer = await PolicePersonnel.create(req.body);
