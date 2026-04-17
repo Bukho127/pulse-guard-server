@@ -1,0 +1,119 @@
+const Incident = require('../models/incidentModel');
+const User = require('../models/userModel');
+
+// CREATE
+const createIncident = async (req, res) => {
+  try {
+    const user_id = req.user.user_id; // from JWT middleware
+
+    const incident = await Incident.create({
+      user_id,
+      video_url: req.body.video_url,
+      latitude: req.body.latitude,
+      longitude: req.body.longitude,
+      address: req.body.address,
+      status: 'pending'
+    });
+
+    res.status(201).json(incident);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET ALL
+const getIncidents = async (req, res) => {
+  try {
+    const incidents = await Incident.findAll({
+      include: [{
+        model: User,
+        attributes: ['full_name', 'email'] // include user details
+      }],
+      order: [['created_at', 'DESC']]
+    });
+    res.json(incidents);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const getMyIncidents = async (req, res) => {
+  try {
+    const incidents = await Incident.findAll({
+      where: { user_id: req.user.user_id },
+      order: [['created_at', 'DESC']]
+    });
+    res.json(incidents);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+// GET ONE
+const getIncidentById = async (req, res) => {
+  try {
+    const incident = await Incident.findByPk(req.params.incidentId, {
+      include: [{
+        model: User,
+        attributes: ['full_name', 'email']
+      }]
+    });
+
+    if (!incident) {
+      return res.status(404).json({ message: 'Incident not found' });
+    }
+
+    res.json(incident);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// UPDATE STATUS
+const updateIncidentStatus = async (req, res) => {
+  try {
+    const [updated] = await Incident.update(
+      {
+        status: req.body.status,
+        acknowledged_at: req.body.status === 'acknowledged' ? new Date() : null
+      },
+      { where: { incident_id: req.params.incidentId } }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Incident not found' });
+    }
+
+    const updatedIncident = await Incident.findByPk(req.params.incidentId);
+    res.json(updatedIncident);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// DELETE
+const deleteIncident = async (req, res) => {
+  try {
+    const deleted = await Incident.destroy({
+      where: { incident_id: req.params.incidentId }
+    });
+
+    if (!deleted) {
+      return res.status(404).json({ message: 'Incident not found' });
+    }
+
+    res.json({ message: 'Incident deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = {
+  createIncident,
+  getIncidents,
+  getIncidentById,
+  updateIncidentStatus,
+  deleteIncident,
+  getMyIncidents
+};

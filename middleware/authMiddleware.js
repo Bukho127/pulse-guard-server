@@ -1,0 +1,27 @@
+
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
+const protect = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Access token required' });
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: 'Invalid or expired token' });
+    req.user = user;
+    next();
+  });
+};
+
+const authorizeUser = (req, res, next) => {
+  if (req.user?.role !== 'user') return res.status(403).json({ message: 'Not authorized' });
+  next();
+};
+
+const authorizePersonnel = (req, res, next) => {
+  if (req.user?.role !== 'personnel') return res.status(403).json({ message: 'Not authorized' });
+  next();
+};
+
+module.exports = { protect, authorizeUser, authorizePersonnel };
