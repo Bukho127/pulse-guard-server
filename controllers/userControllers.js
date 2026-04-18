@@ -92,7 +92,7 @@ const deleteUser = async (req, res) => {
   }
 };
 
-// EXPORT (IMPORTANT)
+
 module.exports = {
   addNewUser,
   loginUser,

@@ -55,8 +55,7 @@ const compressVideo = (req, res, next) => {
             '-preset medium',    // better compression while keeping quality
             '-movflags frag_keyframe+empty_moov' // allows streaming output
         ])
-        .format('mp4')         // always output as mp4 regardless of input format
-        .pipe(outputStream);
+        .format('mp4');        // always output as mp4 regardless of input format
 
     outputStream.on('data', chunk => chunks.push(chunk));
 
@@ -78,6 +77,8 @@ const compressVideo = (req, res, next) => {
         console.error('Video compression failed, uploading original file instead:', err.message);
         finishOnce(() => next());
     });
+
+    command.pipe(outputStream, { end: true });
 };
 
 module.exports = { upload, compressVideo };
