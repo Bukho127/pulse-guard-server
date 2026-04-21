@@ -1,6 +1,7 @@
 const Incident = require('../models/incidentModel');
 const User = require('../models/userModel');
 const { uploadToBlob } = require('../services/blobServices');
+const { createNotification } = require('../services/notificationService');
 
 // CREATE
 const createIncident = async (req, res) => {
@@ -93,6 +94,16 @@ const updateIncidentStatus = async (req, res) => {
     }
 
     const updatedIncident = await Incident.findByPk(req.params.incidentId);
+
+    if (updatedIncident.status === 'acknowledged' && updatedIncident.user_id) {
+      await createNotification({
+        incident_id: updatedIncident.incident_id,
+        user_id: updatedIncident.user_id,
+        message: 'Your incident has been acknowledged. Help is on the way.',
+        notification_type: 'incident_acknowledged'
+      });
+    }
+
     res.json(updatedIncident);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -1,27 +1,27 @@
-
 const multer = require('multer');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-const { Readable, PassThrough } = require('stream');
+const { PassThrough } = require('stream');
+const fs = require('fs');
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 const compressionEnabled = process.env.ENABLE_VIDEO_COMPRESSION !== 'false';
 
-const storage = multer.memoryStorage();
+// Auto-create uploads folder so the server doesn't crash on start
+if (!fs.existsSync('uploads/')) {
+    fs.mkdirSync('uploads/');
+}
+
+const storage = multer.diskStorage({ 
+    destination: (req, file, cb) => cb(null, 'uploads/'),
+    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+}); 
 
 const upload = multer({
     storage,
-    limits: {
-        fileSize: 50 * 1024 * 1024
-    },
+    limits: { fileSize: 50 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        const allowedMimeTypes = [
-            'video/mp4',         //.mp4
-            'video/quicktime',  // .mov
-            'video/x-msvideo',  // .avi
-            'video/x-matroska'  // .mkv
-        ];
-
+        const allowedMimeTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska'];
         if (allowedMimeTypes.includes(file.mimetype)) {
             cb(null, true);
         } else {
@@ -30,12 +30,9 @@ const upload = multer({
     }
 });
 
-// Compression middleware — use this after upload
 const compressVideo = (req, res, next) => {
-    if (!req.file) return next();
-    if (!compressionEnabled) return next();
+    if (!req.file || !compressionEnabled) return next();
 
-    const inputStream = Readable.from(req.file.buffer);
     const outputStream = new PassThrough();
     const chunks = [];
     let completed = false;
@@ -43,19 +40,24 @@ const compressVideo = (req, res, next) => {
     const finishOnce = (handler) => {
         if (completed) return;
         completed = true;
+        // Delete original file from disk to free up space
+        if (fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
         handler();
     };
 
-    const command = ffmpeg(inputStream)
+    const command = ffmpeg(req.file.path)
         .videoCodec('libx264')
         .audioCodec('aac')
         .size('1280x720')
         .outputOptions([
-            '-crf 23',
-            '-preset medium',    // better compression while keeping quality
-            '-movflags frag_keyframe+empty_moov' // allows streaming output
+            '-crf 28',
+            '-preset ultrafast', 
+            '-threads 0',   
+            '-movflags frag_keyframe+empty_moov' 
         ])
-        .format('mp4');        // always output as mp4 regardless of input format
+        .format('mp4');
 
     outputStream.on('data', chunk => chunks.push(chunk));
 
@@ -68,13 +70,14 @@ const compressVideo = (req, res, next) => {
         });
     });
 
+    // Error handling must be INSIDE the function to access 'command' and 'next'
     outputStream.on('error', err => {
-        console.error('Compressed video stream failed, uploading original file instead:', err.message);
+        console.error('Stream failed:', err.message);
         finishOnce(() => next());
     });
 
     command.on('error', (err) => {
-        console.error('Video compression failed, uploading original file instead:', err.message);
+        console.error('FFmpeg failed:', err.message);
         finishOnce(() => next());
     });
 

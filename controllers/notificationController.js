@@ -1,25 +1,74 @@
 const asyncHandler = require('express-async-handler');
 const Notification = require('../models/notificationModel.js');
+const Incident = require('../models/incidentModel.js');
+const {
+  createNotification: createNotificationEntry,
+  serializeNotification
+} = require('../services/notificationService.js');
 
-const getAuthenticatedPersonnelId = (req) =>
-  req.user?.security_personnel_id ?? req.user?.id ?? req.user?.user_id;
+const getAuthenticatedRecipient = (req) => {
+  if (req.user?.role === 'personnel') {
+    const personnelId = req.user?.security_personnel_id ?? req.user?.id;
+    return personnelId
+      ? { recipient_type: 'personnel', security_personnel_id: personnelId }
+      : null;
+  }
+
+  const userId = req.user?.user_id ?? req.user?.id;
+  return userId ? { recipient_type: 'user', user_id: userId } : null;
+};
+
+const buildRecipientWhere = (recipient) => {
+  if (!recipient) {
+    return null;
+  }
+
+  if (recipient.recipient_type === 'personnel') {
+    return {
+      recipient_type: 'personnel',
+      security_personnel_id: recipient.security_personnel_id
+    };
+  }
+
+  return {
+    recipient_type: 'user',
+    user_id: recipient.user_id
+  };
+};
+
+const ownsNotification = (notification, recipient) => {
+  if (!recipient) {
+    return false;
+  }
+
+  if (recipient.recipient_type === 'personnel') {
+    return (
+      notification.recipient_type === 'personnel' &&
+      notification.security_personnel_id === recipient.security_personnel_id
+    );
+  }
+
+  return notification.recipient_type === 'user' && notification.user_id === recipient.user_id;
+};
 
 
 // @desc    Create notification
 // @route   POST /api/notifications
 // @access  Private
 const createNotification = asyncHandler(async (req, res) => {
-  const { incident_id, security_personnel_id } = req.body;
+  const { incident_id, user_id, security_personnel_id, message, notification_type } = req.body;
 
-  if (!incident_id || !security_personnel_id) {
+  if (!incident_id || !message || (!user_id && !security_personnel_id)) {
     res.status(400);
-    throw new Error('Missing required fields');
+    throw new Error('incident_id, message and a recipient id are required');
   }
 
-  const notification = await Notification.create({
+  const notification = await createNotificationEntry({
     incident_id,
+    user_id,
     security_personnel_id,
-    status: 'sent',
+    message,
+    notification_type
   });
 
   res.status(201).json(notification);
@@ -30,19 +79,20 @@ const createNotification = asyncHandler(async (req, res) => {
 // @route   GET /api/notifications
 // @access  Private
 const getUserNotifications = asyncHandler(async (req, res) => {
-  const personnelId = getAuthenticatedPersonnelId(req);
+  const recipient = getAuthenticatedRecipient(req);
+  const where = buildRecipientWhere(recipient);
 
-  if (!personnelId) {
+  if (!where) {
     res.status(401);
-    throw new Error('Authenticated user id not found in token');
+    throw new Error('Authenticated recipient not found in token');
   }
 
   const notifications = await Notification.findAll({
-    where: { security_personnel_id: personnelId },
+    where,
     order: [['sent_at', 'DESC']],
   });
 
-  res.json(notifications);
+  res.json(notifications.map(serializeNotification));
 });
 
 
@@ -50,22 +100,23 @@ const getUserNotifications = asyncHandler(async (req, res) => {
 // @route   GET /api/notifications/unread
 // @access  Private
 const getUnreadNotifications = asyncHandler(async (req, res) => {
-  const personnelId = getAuthenticatedPersonnelId(req);
+  const recipient = getAuthenticatedRecipient(req);
+  const where = buildRecipientWhere(recipient);
 
-  if (!personnelId) {
+  if (!where) {
     res.status(401);
-    throw new Error('Authenticated user id not found in token');
+    throw new Error('Authenticated recipient not found in token');
   }
 
   const notifications = await Notification.findAll({
     where: {
-      security_personnel_id: personnelId,
+      ...where,
       status: 'sent',
     },
     order: [['sent_at', 'DESC']],
   });
 
-  res.json(notifications);
+  res.json(notifications.map(serializeNotification));
 });
 
 
@@ -74,7 +125,7 @@ const getUnreadNotifications = asyncHandler(async (req, res) => {
 // @access  Private
 const markAsRead = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const personnelId = getAuthenticatedPersonnelId(req);
+  const recipient = getAuthenticatedRecipient(req);
 
   const notification = await Notification.findByPk(id);
 
@@ -83,12 +134,12 @@ const markAsRead = asyncHandler(async (req, res) => {
     throw new Error('Notification not found');
   }
 
-  if (!personnelId) {
+  if (!recipient) {
     res.status(401);
-    throw new Error('Authenticated user id not found in token');
+    throw new Error('Authenticated recipient not found in token');
   }
 
-  if (notification.security_personnel_id !== personnelId) {
+  if (!ownsNotification(notification, recipient)) {
     res.status(403);
     throw new Error('Not authorized');
   }
@@ -96,7 +147,7 @@ const markAsRead = asyncHandler(async (req, res) => {
   notification.status = 'read';
   await notification.save();
 
-  res.json({ message: 'Notification marked as read' });
+  res.json(serializeNotification(notification));
 });
 
 
@@ -105,7 +156,7 @@ const markAsRead = asyncHandler(async (req, res) => {
 // @access  Private
 const deleteNotification = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const personnelId = getAuthenticatedPersonnelId(req);
+  const recipient = getAuthenticatedRecipient(req);
 
   const notification = await Notification.findByPk(id);
 
@@ -114,12 +165,12 @@ const deleteNotification = asyncHandler(async (req, res) => {
     throw new Error('Notification not found');
   }
 
-  if (!personnelId) {
+  if (!recipient) {
     res.status(401);
-    throw new Error('Authenticated user id not found in token');
+    throw new Error('Authenticated recipient not found in token');
   }
 
-  if (notification.security_personnel_id !== personnelId) {
+  if (!ownsNotification(notification, recipient)) {
     res.status(403);
     throw new Error('Not authorized');
   }
@@ -129,10 +180,29 @@ const deleteNotification = asyncHandler(async (req, res) => {
   res.json({ message: 'Notification deleted' });
 });
 
+const notifyPersonnelNearby = asyncHandler(async (req, res) => {
+  const incident = await Incident.findByPk(req.params.incidentId);
+
+  if (!incident) {
+    return res.status(404).json({ message: 'Incident not found' });
+  }
+
+  const notification = await createNotificationEntry({
+    incident_id: incident.incident_id,
+    user_id: incident.user_id,
+    message:
+      req.body.message || 'Police personnel are nearby and responding to your incident.',
+    notification_type: 'personnel_nearby'
+  });
+
+  res.status(201).json(notification);
+});
+
 module.exports = {
   createNotification,
   getUserNotifications, 
   getUnreadNotifications,
   markAsRead,
-  deleteNotification
+  deleteNotification,
+  notifyPersonnelNearby
 };  
