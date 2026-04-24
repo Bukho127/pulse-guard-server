@@ -13,7 +13,7 @@ const uploadToBlob = async (file) => {
 
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
-    await blockBlobClient.uploadData(file.buffer, {
+    await blockBlobClient.uploadFile(file.path, {
         blobHTTPHeaders: { blobContentType: file.mimetype }
     });
 

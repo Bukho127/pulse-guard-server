@@ -45,7 +45,15 @@ const PolicePersonnel = sequelize.define('PolicePersonnel', {
     tableName: 'security_personnel',
     timestamps: true,
     createdAt: 'created_at',
-    updatedAt: 'updated_at'
+    updatedAt: 'updated_at',
+    defaultScope: {
+        attributes: { exclude: ['password'] }
+    },
+    scopes: {
+        withPassword: {
+            attributes: { include: ['password'] }
+        }
+    }
 });
 
 PolicePersonnel.beforeCreate(async (personnel) => {

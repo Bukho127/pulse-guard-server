@@ -2,6 +2,7 @@ const Incident = require('../models/incidentModel');
 const User = require('../models/userModel');
 const { uploadToBlob } = require('../services/blobServices');
 const { createNotification } = require('../services/notificationService');
+const fs = require('fs');
 
 // CREATE
 const createIncident = async (req, res) => {
@@ -26,6 +27,10 @@ const createIncident = async (req, res) => {
     res.status(201).json(incident);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  } finally {
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
   }
 };
 
@@ -52,6 +57,25 @@ const getMyIncidents = async (req, res) => {
       order: [['created_at', 'DESC']]
     });
     res.json(incidents);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const getMyIncidentById = async (req, res) => {
+  try {
+    const incident = await Incident.findOne({
+      where: {
+        incident_id: req.params.incidentId,
+        user_id: req.user.user_id
+      }
+    });
+
+    if (!incident) {
+      return res.status(404).json({ message: 'Incident not found' });
+    }
+
+    res.json(incident);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -130,6 +154,7 @@ const deleteIncident = async (req, res) => {
 module.exports = {
   createIncident,
   getIncidents,
+  getMyIncidentById,
   getIncidentById,
   updateIncidentStatus,
   deleteIncident,

@@ -27,7 +27,15 @@ const User = sequelize.define('User', {
     }
 }, {
     tableName: 'users',
-    timestamps: true   
+    timestamps: true,
+    defaultScope: {
+        attributes: { exclude: ['password'] }
+    },
+    scopes: {
+        withPassword: {
+            attributes: { include: ['password'] }
+        }
+    }
 });
 
 User.beforeCreate(async (user) => {

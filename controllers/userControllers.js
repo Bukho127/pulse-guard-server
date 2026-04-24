@@ -2,6 +2,10 @@ const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const canAccessUser = (req, userId) => (
+  req.user?.role === 'personnel' || Number(req.user?.user_id) === Number(userId)
+);
+
 // CREATE
 const addNewUser = async (req, res) => {
   try {
@@ -19,7 +23,7 @@ const addNewUser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ where: { email } });
+    const user = await User.scope('withPassword').findOne({ where: { email } });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -45,6 +49,10 @@ const getUsers = async (req, res) => {
 // GET ONE
 const getUserWithID = async (req, res) => {
   try {
+    if (!canAccessUser(req, req.params.userId)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
     const user = await User.findByPk(req.params.userId);
 
     if (!user) {
@@ -60,8 +68,13 @@ const getUserWithID = async (req, res) => {
 // UPDATE
 const updateUser = async (req, res) => {
   try {
+    if (!canAccessUser(req, req.params.userId)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
     const [updated] = await User.update(req.body, {
-      where: { user_id: req.params.userId }
+      where: { user_id: req.params.userId },
+      individualHooks: true
     });
 
     if (!updated) {
@@ -78,6 +91,10 @@ const updateUser = async (req, res) => {
 // DELETE
 const deleteUser = async (req, res) => {
   try {
+    if (!canAccessUser(req, req.params.userId)) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
     const deleted = await User.destroy({
       where: { user_id: req.params.userId }
     });

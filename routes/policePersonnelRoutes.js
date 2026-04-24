@@ -2,19 +2,23 @@ const express = require('express');
 
 const {
   addPolicePersonnel,
+  loginPolicePersonnel,
   getAllPolicePersonnel,
   getPoliceById,
   updatePolicePersonnel,
   deletePolicePersonnel
 } = require('../controllers/policePersonnelController');
+const { protect, authorizePersonnel } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
 // CREATE (register officer)
+router.post('/auth/personnel/login', loginPolicePersonnel);
+router.post('/police/login', loginPolicePersonnel);
 router.post('/police', addPolicePersonnel);
-router.get('/police', getAllPolicePersonnel);
-router.get('/police/:id', getPoliceById);
-router.put('/police/:id', updatePolicePersonnel);
-router.delete('/police/:id', deletePolicePersonnel);
+router.get('/police', protect, authorizePersonnel, getAllPolicePersonnel);
+router.get('/police/:id', protect, authorizePersonnel, getPoliceById);
+router.put('/police/:id', protect, authorizePersonnel, updatePolicePersonnel);
+router.delete('/police/:id', protect, authorizePersonnel, deletePolicePersonnel);
 
 module.exports = router;
