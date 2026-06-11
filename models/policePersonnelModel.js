@@ -8,7 +8,14 @@ const PolicePersonnel = sequelize.define('PolicePersonnel', {
         primaryKey: true,
         autoIncrement: true
     },
-    full_name: {
+    name: {
+        field: 'name',
+        type: DataTypes.STRING,
+        allowNull: false,
+        required: true
+    },
+    surname: {
+        field: 'surname',
         type: DataTypes.STRING,
         allowNull: false,
         required: true
@@ -22,10 +29,25 @@ const PolicePersonnel = sequelize.define('PolicePersonnel', {
             isEmail: true
         }
     },
-    badge_number: {
+    force_number: {
+        // persisted column name matches DB
+        field: 'force_number',
         type: DataTypes.STRING,
         unique: true,
-        required: true
+        allowNull: true,
+        required: false,
+        set(value) {
+            if (!value && value !== '') return this.setDataValue('force_number', value);
+            const digits = String(value).replace(/\D/g, '');
+            const formatted = digits.length > 1 ? (digits.length > 7 ? digits.slice(0, 7) + '-' + digits.slice(7, 8) : digits) : digits;
+            this.setDataValue('force_number', formatted);
+        },
+        validate: {
+            is: {
+                args: /^[0-9]{7}-[0-9]{1}$/,
+                msg: 'force_number must match the format 1234567-8'
+            }
+        }
     },
     role_title: {
         type: DataTypes.STRING,

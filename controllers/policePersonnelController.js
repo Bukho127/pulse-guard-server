@@ -8,19 +8,37 @@ const addPolicePersonnel = async (req, res) => {
     const officer = await PolicePersonnel.create(req.body);
     res.status(201).json(officer);
   } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      const details = err.errors.map(e => {
+        const dbField = e.path || e.origin && e.origin.column || null;
+        const field = dbField === 'badge_number' ? 'force_number' : dbField;
+        return { field, value: e.value, message: `${field || dbField} must be unique` };
+      });
+      return res.status(400).json({ error: 'Unique constraint error', details });
+    }
+    if (err.name === 'SequelizeValidationError') {
+      return res.status(400).json({ error: 'Validation error', details: err.errors.map(e => e.message) });
+    }
     res.status(500).json({ error: err.message });
   }
 };
 
+const formatForceNumber = (value) => {
+  if (!value) return value;
+  const digits = String(value).replace(/\D/g, '');
+  return digits.length === 8 ? `${digits.slice(0, 7)}-${digits.slice(7)}` : String(value);
+};
+
 const loginPolicePersonnel = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { force_number, password } = req.body;
+    const normalizedForceNumber = formatForceNumber(force_number);
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    if (!normalizedForceNumber || !password) {
+      return res.status(400).json({ message: 'Force number and password are required' });
     }
 
-    const officer = await PolicePersonnel.scope('withPassword').findOne({ where: { email } });
+    const officer = await PolicePersonnel.scope('withPassword').findOne({ where: { force_number: normalizedForceNumber } });
 
     if (!officer) {
       return res.status(404).json({ message: 'Officer not found' });
@@ -84,6 +102,9 @@ const updatePolicePersonnel = async (req, res) => {
     const updatedOfficer = await PolicePersonnel.findByPk(req.params.id);
     res.json(updatedOfficer);
   } catch (err) {
+    if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ error: 'Validation error', details: err.errors.map(e => e.message) });
+    }
     res.status(500).json({ error: err.message });
   }
 };

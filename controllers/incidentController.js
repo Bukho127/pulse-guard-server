@@ -39,9 +39,9 @@ const getIncidents = async (req, res) => {
   try {
     const incidents = await Incident.findAll({
       include: [{
-        model: User,
-        attributes: ['full_name', 'email'] // include user details
-      }],
+          model: User,
+          attributes: ['full_name', 'email'] // include user details
+        }],
       order: [['created_at', 'DESC']]
     });
     res.json(incidents);
@@ -87,9 +87,9 @@ const getIncidentById = async (req, res) => {
   try {
     const incident = await Incident.findByPk(req.params.incidentId, {
       include: [{
-        model: User,
-        attributes: ['full_name', 'email']
-      }]
+          model: User,
+          attributes: ['full_name', 'email']
+        }]
     });
 
     if (!incident) {
