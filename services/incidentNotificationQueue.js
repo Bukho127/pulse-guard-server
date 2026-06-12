@@ -90,6 +90,10 @@ const queueIncidentPersonnelNotifications = async (incident) => {
 const startIncidentNotificationWorker = async () => {
   const queue = getQueue();
 
+
+  /* this allows the app to function without a queue if Redis/Valkey isn't available, 
+   but logs that it's using in-memory mode and won't persist notifications or retry on failure */
+
   if (!queue) {
     console.log('Incident notification queue using in-memory mode.');
     return;

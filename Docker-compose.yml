@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # Valkey service for the queue
+  valkey:
+    image: valkey/valkey:latest
+    container_name: pulse-guard-valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey-data:/data
+    networks:
+      - pulse-guard-network
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Node.js application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pulse-guard-backend
+    ports:
+      - "5001:5000"
+    environment:
+      # Database configuration (adjust if using local database)
+      DB_HOST: ${DB_HOST:-localhost}
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-password}
+      DB_NAME: ${DB_NAME:-pulseguard}
+      DB_PORT: ${DB_PORT:-3001}
+      
+      # Valkey configuration
+      NOTIFICATION_QUEUE_DRIVER: bull
+      REDIS_HOST: valkey
+      REDIS_PORT: 6379
+      
+      # Other env variables
+      PORT: 5000
+      NODE_ENV: ${NODE_ENV:-development}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
+      
+    depends_on:
+      valkey:
+        condition: service_healthy
+    networks:
+      - pulse-guard-network
+    restart: unless-stopped
+    # Uncomment if you want to see logs
+    # logging:
+    #   driver: "json-file"
+    #   options:
+    #     max-size: "10m"
+    #     max-file: "3"
+
+volumes:
+  valkey-data:
+    driver: local
+
+networks:
+  pulse-guard-network:
+    driver: bridge
