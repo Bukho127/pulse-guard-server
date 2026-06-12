@@ -2,6 +2,7 @@ const Incident = require('../models/incidentModel');
 const User = require('../models/userModel');
 const { uploadToBlob } = require('../services/blobServices');
 const { createNotification } = require('../services/notificationService');
+const { queueIncidentPersonnelNotifications } = require('../services/incidentNotificationQueue');
 const fs = require('fs');
 
 // CREATE
@@ -23,6 +24,12 @@ const createIncident = async (req, res) => {
       address: req.body.address,
       status: 'pending'
     });
+
+    try {
+      await queueIncidentPersonnelNotifications(incident);
+    } catch (queueError) {
+      console.error('Failed to queue police personnel notifications:', queueError.message);
+    }
 
     res.status(201).json(incident);
   } catch (err) {

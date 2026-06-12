@@ -146,3 +146,11 @@ Upload (incident):
 
 const form = new FormData(); form.append('video', file); form.append('latitude', lat); form.append('longitude', lng); form.append('address', addr);
 axios.post('/incidents', form, { headers: { 'Content-Type': 'multipart/form-
+
+
+
+
+
+
+
+

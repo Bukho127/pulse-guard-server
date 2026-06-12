@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const { connectDB, sequelize } = require('./config/db');
 require('dotenv').config();
 const { setIo } = require('./services/socketService');
+const { startIncidentNotificationWorker } = require('./services/incidentNotificationQueue');
 
 const PORT = process.env.PORT || 5000;
 
@@ -113,6 +114,7 @@ connectDB().then(async (connected) => {
     try {
       await sequelize.sync();
       console.log('Database synced successfully');
+      startIncidentNotificationWorker();
 
       server.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
