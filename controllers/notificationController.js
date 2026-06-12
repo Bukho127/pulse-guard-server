@@ -7,9 +7,8 @@ const {
 } = require('../services/notificationService.js');
 
 
-// --------------------------------------------------
 // NORMALIZED USER CONTEXT (SINGLE SOURCE OF TRUTH)
-// --------------------------------------------------
+
 const getAuthenticatedRecipient = (req) => {
   if (!req.user || !req.user.id || !req.user.role) return null;
 
@@ -27,9 +26,9 @@ const getAuthenticatedRecipient = (req) => {
 };
 
 
-// --------------------------------------------------
+
 // BUILD SAFE SEQUELIZE WHERE CLAUSE
-// --------------------------------------------------
+
 const buildRecipientWhere = (recipient) => {
   if (!recipient) return null;
 
@@ -51,9 +50,9 @@ const buildRecipientWhere = (recipient) => {
 };
 
 
-// --------------------------------------------------
+
 // OWNERSHIP CHECK
-// --------------------------------------------------
+
 const ownsNotification = (notification, recipient) => {
   if (!recipient || !notification) return false;
 
@@ -71,9 +70,8 @@ const ownsNotification = (notification, recipient) => {
 };
 
 
-// --------------------------------------------------
 // CREATE NOTIFICATION
-// --------------------------------------------------
+
 const createNotification = asyncHandler(async (req, res) => {
   const {
     incident_id,
@@ -101,9 +99,7 @@ const createNotification = asyncHandler(async (req, res) => {
 });
 
 
-// --------------------------------------------------
-// GET ALL NOTIFICATIONS (FIXED)
-// --------------------------------------------------
+// GET ALL NOTIFICATIONS
 const getUserNotifications = asyncHandler(async (req, res) => {
   const recipient = getAuthenticatedRecipient(req);
   const where = buildRecipientWhere(recipient);
@@ -123,9 +119,9 @@ const getUserNotifications = asyncHandler(async (req, res) => {
 });
 
 
-// --------------------------------------------------
+
 // GET UNREAD NOTIFICATIONS (FIXED)
-// --------------------------------------------------
+
 const getUnreadNotifications = asyncHandler(async (req, res) => {
   try {
     const recipient = getAuthenticatedRecipient(req);
@@ -156,9 +152,9 @@ const getUnreadNotifications = asyncHandler(async (req, res) => {
 });
 
 
-// --------------------------------------------------
+
 // MARK AS READ
-// --------------------------------------------------
+
 const markAsRead = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const recipient = getAuthenticatedRecipient(req);
@@ -184,9 +180,9 @@ const markAsRead = asyncHandler(async (req, res) => {
 });
 
 
-// --------------------------------------------------
+
 // DELETE NOTIFICATION
-// --------------------------------------------------
+
 const deleteNotification = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const recipient = getAuthenticatedRecipient(req);
@@ -211,9 +207,7 @@ const deleteNotification = asyncHandler(async (req, res) => {
 });
 
 
-// --------------------------------------------------
 // INCIDENT NOTIFICATION
-// --------------------------------------------------
 const notifyPersonnelNearby = asyncHandler(async (req, res) => {
   const incident = await Incident.findByPk(req.params.incidentId);
 
