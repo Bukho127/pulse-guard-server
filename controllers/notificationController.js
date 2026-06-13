@@ -8,27 +8,26 @@ const {
 
 
 // NORMALIZED USER CONTEXT (SINGLE SOURCE OF TRUTH)
-
 const getAuthenticatedRecipient = (req) => {
-  if (!req.user || !req.user.id || !req.user.role) return null;
+  if (!req.user || !req.user.role) return null;
 
   if (req.user.role === 'personnel') {
+    if (!req.user.id) return null;  // 
     return {
       recipient_type: 'personnel',
-      security_personnel_id: req.user.id
+      security_personnel_id: req.user.id 
     };
   }
 
+  if (!req.user.user_id) return null;
   return {
     recipient_type: 'user',
-    user_id: req.user.id
+    user_id: req.user.user_id
   };
 };
 
 
-
 // BUILD SAFE SEQUELIZE WHERE CLAUSE
-
 const buildRecipientWhere = (recipient) => {
   if (!recipient) return null;
 
@@ -141,7 +140,7 @@ const getUnreadNotifications = asyncHandler(async (req, res) => {
 
     res.json(notifications.map(serializeNotification));
   } catch (err) {
-    console.error("🔥 SEQUELIZE ERROR:", err);
+    console.error("SEQUELIZE ERROR:", err);
     console.error("STACK:", err.stack);
 
     return res.status(500).json({

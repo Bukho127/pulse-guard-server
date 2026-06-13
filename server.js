@@ -18,6 +18,9 @@ const incidentRoutes = require('./routes/incidentRoutes');
 const heatmapRoutes = require('./routes/heatmapRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 
+// ==================== DATABASE ASSOCIATIONS ====================
+const associations = require('./models/associations'); // Ensure associations are defined before syncing the database
+
 // Models
 const User = require('./models/userModel');
 const PolicePersonnel = require('./models/policePersonnelModel');
@@ -56,9 +59,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// ==================== DATABASE ASSOCIATIONS ====================
-User.hasMany(Incident, { foreignKey: 'user_id' });
-Incident.belongsTo(User, { foreignKey: 'user_id' });
 
 // ==================== SOCKET.IO AUTHENTICATION ====================
 setIo(io);
