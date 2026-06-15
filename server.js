@@ -8,6 +8,14 @@ require('dotenv').config();
 const { setIo } = require('./services/socketService');
 const { startIncidentNotificationWorker } = require('./services/incidentNotificationQueue');
 
+// Log database connection details for debugging purposes 
+console.log({
+  DB_HOST: process.env.DB_HOST,
+  DB_PORT: process.env.DB_PORT,
+  DB_USER: process.env.DB_USER,
+  DB_NAME: process.env.DB_NAME
+});
+
 const PORT = process.env.PORT || 5000;
 
 // ==================== IMPORTS ====================

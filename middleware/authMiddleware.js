@@ -4,9 +4,6 @@ require('dotenv').config();
 
 const protect = (req, res, next) => {
 
-  console.log('PROTECT MIDDLEWARE - Headers:', req.headers);
-  console.log('PROTECT MIDDLEWARE - Auth header:', req.headers.authorization);
-
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -34,8 +31,6 @@ const authorizeUser = (req, res, next) => {
 };
 
 const authorizePersonnel = (req, res, next) => {
-  console.log('AUTHORIZE PERSONNEL - req.user:', req.user);
-  console.log('AUTHORIZE PERSONNEL - req.user.role:', req.user?.role);
   if (req.user?.role !== 'personnel') return res.status(403).json({ message: 'Not authorized' });
   next();
 };

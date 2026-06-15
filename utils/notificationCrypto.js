@@ -1,3 +1,7 @@
+//this file is used to encrypt and decrypt notification messages using AES-256-GCM algorithm.
+// The encryption key is retrieved from the environment variable NOTIFICATION_ENCRYPTION_KEY, 
+// which must be a 64-character hex string.
+
 const crypto = require('crypto');
 
 const ALGORITHM = 'aes-256-gcm';

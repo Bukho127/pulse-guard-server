@@ -1,3 +1,6 @@
+// This file defines the associations between the models in the application using Sequelize ORM.
+//the associations are defined in a way that reflects the relationships between the entities in the database.
+
 const User = require('./userModel');
 const PolicePersonnel = require('./policePersonnelModel');
 const Incident = require('./incidentModel');
