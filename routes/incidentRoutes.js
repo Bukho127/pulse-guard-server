@@ -2,6 +2,7 @@ const express = require('express');
 const {
   createIncident,
   getIncidents,
+  getAllIncidents,
   getMyIncidentById,
   getIncidentById,
   updateIncidentStatus,
@@ -23,6 +24,7 @@ router.put('/incidents', (req, res) => {
 router.get('/incidents/my', protect, authorizeUser, getMyIncidents);
 router.get('/incidents/my/:incidentId', protect, authorizeUser, getMyIncidentById);
 
+router.get('/incidents/all', protect, authorizePersonnel, getAllIncidents);
 router.get('/incidents/:incidentId', protect, authorizePersonnel, getIncidentById);
 router.get('/incidents', protect, authorizePersonnel, getIncidents);
 router.put('/incidents/:incidentId/status', protect, authorizePersonnel, updateIncidentStatus);

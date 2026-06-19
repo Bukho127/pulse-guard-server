@@ -8,15 +8,7 @@ require('dotenv').config();
 const { setIo } = require('./services/socketService');
 const { startIncidentNotificationWorker } = require('./services/incidentNotificationQueue');
 
-// Log database connection details for debugging purposes 
-console.log({
-  DB_HOST: process.env.DB_HOST,
-  DB_PORT: process.env.DB_PORT,
-  DB_USER: process.env.DB_USER,
-  DB_NAME: process.env.DB_NAME
-});
-
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // ==================== IMPORTS ====================
 // Routes
@@ -25,6 +17,10 @@ const policePersonnelRoutes = require('./routes/policePersonnelRoutes.js');
 const incidentRoutes = require('./routes/incidentRoutes');
 const heatmapRoutes = require('./routes/heatmapRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+
+
+
+
 
 // ==================== DATABASE ASSOCIATIONS ====================
 const associations = require('./models/associations'); // Ensure associations are defined before syncing the database

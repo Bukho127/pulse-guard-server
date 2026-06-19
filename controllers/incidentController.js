@@ -6,6 +6,29 @@ const { createNotification } = require('../services/notificationService');
 const { queueIncidentPersonnelNotifications } = require('../services/incidentNotificationQueue');
 const fs = require('fs');
 
+const getIncidentReporterInclude = () => [{
+  model: User,
+  attributes: ['full_name', 'email']
+}];
+
+const buildPagination = (page, limit, total) => {
+  const pages = Math.ceil(total / limit);
+
+  return {
+    page,
+    limit,
+    total,
+    pages,
+    hasPrev: page > 1,
+    hasNext: page < pages
+  };
+};
+
+const getAllIncidentsQuery = () => ({
+  include: getIncidentReporterInclude(),
+  order: [['created_at', 'DESC']]
+});
+
 // CREATE
 const createIncident = async (req, res) => {
   try {
@@ -42,29 +65,87 @@ const createIncident = async (req, res) => {
   }
 };
 
-// GET ALL
+// GET ALL, optionally paginated when page and limit are both provided
 const getIncidents = async (req, res) => {
   try {
-    const incidents = await Incident.findAll({
-      include: [{
-          model: User,
-          attributes: ['full_name', 'email'] // include user details
-        }],
-      order: [['created_at', 'DESC']]
+    const hasPage = req.query.page !== undefined;
+    const hasLimit = req.query.limit !== undefined;
+
+    if (hasPage !== hasLimit) {
+      return res.status(400).json({
+        message: 'Both page and limit are required for paginated incident requests.'
+      });
+    }
+
+    if (!hasPage && !hasLimit) {
+      const incidents = await Incident.findAll(getAllIncidentsQuery());
+      return res.json({ data: incidents });
+    }
+
+    let page = parseInt(req.query.page, 10);
+    let limit = parseInt(req.query.limit, 10);
+
+    if (Number.isNaN(page) || Number.isNaN(limit)) {
+      return res.status(400).json({
+        message: 'page and limit must be valid numbers.'
+      });
+    }
+
+    page = Math.max(1, page);
+    limit = Math.min(100, Math.max(1, limit));
+
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Incident.findAndCountAll({
+      include: getIncidentReporterInclude(),
+      order: [['created_at', 'DESC']],
+      limit,
+      offset
     });
-    res.json(incidents);
+
+    res.json({
+      data: rows,
+      pagination: buildPagination(page, limit, count)
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+const getAllIncidents = async (req, res) => {
+  try {
+    const incidents = await Incident.findAll(getAllIncidentsQuery());
+
+    res.json({ data: incidents });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET MY INCIDENTS with PAGINATION
 const getMyIncidents = async (req, res) => {
   try {
-    const incidents = await Incident.findAll({
+    console.log('=== GET INCIDENTS CALLED ===');
+    console.log('Query params:', req.query);
+    let page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 10;
+
+    page = Math.max(1, page);
+    limit = Math.min(100, Math.max(1, limit));
+
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Incident.findAndCountAll({
       where: { user_id: req.user.user_id },
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      limit,
+      offset
     });
-    res.json(incidents);
+
+    res.json({
+      data: rows,
+      pagination: buildPagination(page, limit, count)
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -94,10 +175,7 @@ const getMyIncidentById = async (req, res) => {
 const getIncidentById = async (req, res) => {
   try {
     const incident = await Incident.findByPk(req.params.incidentId, {
-      include: [{
-          model: User,
-          attributes: ['full_name', 'email']
-        }]
+      include: getIncidentReporterInclude()
     });
 
     if (!incident) {
@@ -115,7 +193,7 @@ const updateIncidentStatus = async (req, res) => {
   try {
     console.log('Updating incident:', req.params.incidentId, 'to status:', req.body.status);
     console.log('User:', req.user);
-    
+
     const [updated] = await Incident.update(
       {
         status: req.body.status,
@@ -185,6 +263,7 @@ const deleteIncident = async (req, res) => {
 module.exports = {
   createIncident,
   getIncidents,
+  getAllIncidents,
   getMyIncidentById,
   getIncidentById,
   updateIncidentStatus,

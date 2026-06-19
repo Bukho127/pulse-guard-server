@@ -3,7 +3,7 @@ const h3 = require('h3-js');
 const chroma = require('chroma-js');
 const Incident = require('../models/incidentModel');
 
-const H3_RESOLUTION = 14; // Adjust: 12 = ~1km, 13 = ~250m, 14 = ~65m
+const H3_RESOLUTION = 10; // Adjust: 12 = ~1km, 13 = ~250m, 14 = ~65m
 const colorScale = chroma.scale(['green', 'yellow', 'orange', 'red']).domain([0, 15]);
 
 // Build H3-based heatmap with smooth colors
@@ -88,7 +88,7 @@ const getHeatmapByDateRange = async (req, res) => {
       return res.status(400).json({ message: 'Invalid date format' });
     }
 
-    end.setHours(23, 59, 59, 999);
+    end.setHours(23, 59, 59, 999); // Include the entire end date
 
     const incidents = await getAcknowledgedIncidents({
       created_at: {
@@ -112,6 +112,35 @@ const getHeatmapByDateRange = async (req, res) => {
   }
 };
 
+const getOSRMRoute = async (req, res) => {
+  try {
+    const { startLng, startLat, endLng, endLat } = req.query;
+    console.log('OSRM route request:', { startLng, startLat, endLng, endLat });
+
+    if (!startLng || !startLat || !endLng || !endLat) {
+      return res.status(400).json({ error: 'startLng, startLat, endLng, endLat are required' });
+    }
+
+    const url = `http://host.docker.internal:5000/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?geometries=geojson&overview=full`
+    console.log('Calling OSRM URL:', url);
+
+    const response = await fetch(url);
+    console.log('OSRM response status:', response.status);
+
+    const data = await response.json();
+    console.log('OSRM response data:', JSON.stringify(data));
+
+    if (data.code !== 'Ok' || !data.routes?.length) {
+      return res.status(400).json({ error: `No route found: ${data.code}` });
+    }
+
+    res.json(data.routes[0].geometry);
+  } catch (err) {
+    console.error('OSRM controller error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // Optional: Get heatmap by month (for convenience)
 const getHeatmapByMonth = async (req, res) => {
   try {
@@ -131,11 +160,14 @@ const getHeatmapByMonth = async (req, res) => {
       }
     });
 
+    const heatmapFeatures = buildHeatmapData(incidents);
+
     res.json({
       type: 'heatmap',
-      features: buildHeatmapData(incidents),
+      features: heatmapFeatures,
       metadata: {
         totalIncidents: incidents.length,
+        totalHexagons: heatmapFeatures.length,
         month: month,
         resolution: H3_RESOLUTION,
         colorScale: 'green→yellow→orange→red'
@@ -149,5 +181,6 @@ const getHeatmapByMonth = async (req, res) => {
 module.exports = {
   getHeatmapData,
   getHeatmapByDateRange,
-  getHeatmapByMonth
+  getHeatmapByMonth,
+  getOSRMRoute
 };
