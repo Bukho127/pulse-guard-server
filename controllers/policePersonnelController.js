@@ -76,7 +76,7 @@ const getAllPolicePersonnel = async (req, res) => {
 
 const getPoliceById = async (req, res) => {
   try {
-    const officer = await PolicePersonnel.findByPk(req.params.id);
+    const officer = await PolicePersonnel.findById(req.params.id);
 
     if (!officer) {
       return res.status(404).json({ message: 'Officer not found' });
@@ -99,7 +99,7 @@ const updatePolicePersonnel = async (req, res) => {
       return res.status(404).json({ message: 'Officer not found' });
     }
 
-    const updatedOfficer = await PolicePersonnel.findByPk(req.params.id);
+    const updatedOfficer = await PolicePersonnel.findById(req.params.id);
     res.json(updatedOfficer);
   } catch (err) {
     if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {

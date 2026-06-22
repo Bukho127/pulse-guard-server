@@ -31,8 +31,11 @@ const getAllIncidentsQuery = () => ({
 
 // CREATE
 const createIncident = async (req, res) => {
+  console.log("CREATE INCIDENT CALLED")
+  
   try {
     const user_id = req.user.user_id; // from JWT middleware
+     console.log('req.user:', req.user)
 
     if (!req.file) {
       return res.status(400).json({ message: 'Video file is required' });
@@ -174,7 +177,7 @@ const getMyIncidentById = async (req, res) => {
 // GET ONE
 const getIncidentById = async (req, res) => {
   try {
-    const incident = await Incident.findByPk(req.params.incidentId, {
+    const incident = await Incident.findById(req.params.incidentId, {
       include: getIncidentReporterInclude()
     });
 
@@ -218,7 +221,7 @@ const updateIncidentStatus = async (req, res) => {
     });
     console.log('History record created');
 
-    const updatedIncident = await Incident.findByPk(req.params.incidentId);
+    const updatedIncident = await Incident.findById(req.params.incidentId);
 
     if (updatedIncident.status === 'acknowledged' && updatedIncident.user_id) {
       try {

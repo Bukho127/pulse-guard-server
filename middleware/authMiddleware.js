@@ -16,7 +16,7 @@ const protect = (req, res, next) => {
     req.user = {
       id: decoded.userId || decoded.security_personnel_id,
       security_personnel_id: decoded.security_personnel_id,  
-      user_id: decoded.userId, 
+      user_id: decoded.user_id, 
       role: decoded.role
     };
 

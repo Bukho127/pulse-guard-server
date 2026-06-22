@@ -27,7 +27,7 @@ const buildNewIncidentMessage = (incident) => {
 
 // OPTIMIZED: Pagination + Batch Insert
 const notifyPolicePersonnelForIncident = async (incident_id) => {
-  const incident = await Incident.findByPk(incident_id);
+  const incident = await Incident.findById(incident_id);
   if (!incident) {
     return { notified: 0, reason: 'Incident not found' };
   }

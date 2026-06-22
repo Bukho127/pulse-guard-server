@@ -32,7 +32,7 @@ const updateIncidentStatus = async (req, res) => {
       throw historyError;
     }
 
-    const updatedIncident = await Incident.findByPk(req.params.incidentId);
+    const updatedIncident = await Incident.findById(req.params.incidentId);
 
     if (updatedIncident.status === 'acknowledged' && updatedIncident.user_id) {
       try {

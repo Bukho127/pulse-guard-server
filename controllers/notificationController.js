@@ -158,7 +158,7 @@ const markAsRead = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const recipient = getAuthenticatedRecipient(req);
 
-  const notification = await Notification.findByPk(id);
+  const notification = await Notification.findById(id);
 
   if (!notification) {
     return res.status(404).json({ message: 'Notification not found' });
@@ -186,7 +186,7 @@ const deleteNotification = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const recipient = getAuthenticatedRecipient(req);
 
-  const notification = await Notification.findByPk(id);
+  const notification = await Notification.findById(id);
 
   if (!notification) {
     return res.status(404).json({ message: 'Notification not found' });
@@ -208,7 +208,7 @@ const deleteNotification = asyncHandler(async (req, res) => {
 
 // INCIDENT NOTIFICATION
 const notifyPersonnelNearby = asyncHandler(async (req, res) => {
-  const incident = await Incident.findByPk(req.params.incidentId);
+  const incident = await Incident.findById(req.params.incidentId);
 
   if (!incident) {
     return res.status(404).json({ message: 'Incident not found' });

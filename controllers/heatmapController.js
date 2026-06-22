@@ -92,7 +92,7 @@ const getHeatmapByDateRange = async (req, res) => {
 
     const incidents = await getAcknowledgedIncidents({
       created_at: {
-        [Op.between]: [start, end]
+        $between: [start, end]
       }
     });
 
@@ -156,7 +156,7 @@ const getHeatmapByMonth = async (req, res) => {
 
     const incidents = await getAcknowledgedIncidents({
       created_at: {
-        [Op.between]: [start, end]
+        $between: [start, end]
       }
     });
 
@@ -174,6 +174,7 @@ const getHeatmapByMonth = async (req, res) => {
       }
     });
   } catch (err) {
+     console.error('HEATMAP ERROR:', err.message)
     res.status(500).json({ error: err.message });
   }
 };

@@ -53,7 +53,7 @@ const getUserWithID = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    const user = await User.findByPk(req.params.userId);
+    const user = await User.findById(req.params.userId);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -81,7 +81,7 @@ const updateUser = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const updatedUser = await User.findByPk(req.params.userId);
+    const updatedUser = await User.findById(req.params.userId);
     res.json(updatedUser);
   } catch (err) {
     res.status(500).json({ error: err.message });
