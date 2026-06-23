@@ -3,8 +3,11 @@ const IncidentHistory = require('../models/incidentHistoryModel')
 const User = require('../models/userModel');
 const { uploadToBlob } = require('../services/blobServices');
 const { createNotification } = require('../services/notificationService');
+const { resolveLocation } = require("../services/locationResolver");
 const { queueIncidentPersonnelNotifications } = require('../services/incidentNotificationQueue');
+
 const fs = require('fs');
+
 
 const getIncidentReporterInclude = () => [{
   model: User,
@@ -31,11 +34,11 @@ const getAllIncidentsQuery = () => ({
 
 // CREATE
 const createIncident = async (req, res) => {
-  console.log("CREATE INCIDENT CALLED")
-  
+  console.log("CREATE INCIDENT CALLED");
+
   try {
-    const user_id = req.user.user_id; // from JWT middleware
-     console.log('req.user:', req.user)
+    const user_id = req.user.user_id;
+    console.log('req.user:', req.user);
 
     if (!req.file) {
       return res.status(400).json({ message: 'Video file is required' });
@@ -43,30 +46,55 @@ const createIncident = async (req, res) => {
 
     const video_url = await uploadToBlob(req.file);
 
+    const latitude = req.body.latitude;
+    const longitude = req.body.longitude;
+
+    let resolvedAddress = null;
+
+    try {
+      const locationData = await resolveLocation(latitude, longitude);
+
+      // Prefer short form, fallback to full
+      resolvedAddress =
+        locationData?.short ||
+        locationData?.full ||
+        null;
+
+    } catch (geoError) {
+      console.error('Location resolve failed:', geoError.message);
+      // do NOT block incident creation
+    }
+
     const incident = await Incident.create({
       user_id,
       video_url,
-      latitude: req.body.latitude,
-      longitude: req.body.longitude,
-      address: req.body.address,
+      latitude,
+      longitude,
+      address: resolvedAddress,
       status: 'pending'
     });
 
     try {
       await queueIncidentPersonnelNotifications(incident);
     } catch (queueError) {
-      console.error('Failed to queue police personnel notifications:', queueError.message);
+      console.error(
+        'Failed to queue police personnel notifications:',
+        queueError.message
+      );
     }
 
-    res.status(201).json(incident);
+    return res.status(201).json(incident);
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   } finally {
     if (req.file?.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
   }
 };
+
+
 
 // GET ALL, optionally paginated when page and limit are both provided
 const getIncidents = async (req, res) => {
