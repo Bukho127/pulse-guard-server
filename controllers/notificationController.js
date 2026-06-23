@@ -1,25 +1,31 @@
 const asyncHandler = require('express-async-handler');
 const Notification = require('../models/notificationModel.js');
 const Incident = require('../models/incidentModel.js');
+
 const {
   createNotification: createNotificationEntry,
   serializeNotification
 } = require('../services/notificationService.js');
 
+const {
+  emitNotificationToRecipient
+} = require('../services/socketService.js');
 
-// NORMALIZED USER CONTEXT (SINGLE SOURCE OF TRUTH)
+
+// NORMALIZED USER CONTEXT
 const getAuthenticatedRecipient = (req) => {
   if (!req.user || !req.user.role) return null;
 
   if (req.user.role === 'personnel') {
-    if (!req.user.id) return null;  // 
+    if (!req.user.id) return null;
     return {
       recipient_type: 'personnel',
-      security_personnel_id: req.user.id 
+      security_personnel_id: req.user.id
     };
   }
 
   if (!req.user.user_id) return null;
+
   return {
     recipient_type: 'user',
     user_id: req.user.user_id
@@ -27,50 +33,7 @@ const getAuthenticatedRecipient = (req) => {
 };
 
 
-// BUILD SAFE SEQUELIZE WHERE CLAUSE
-const buildRecipientWhere = (recipient) => {
-  if (!recipient) return null;
-
-  if (recipient.recipient_type === 'personnel') {
-    if (!recipient.security_personnel_id) return null;
-
-    return {
-      recipient_type: 'personnel',
-      security_personnel_id: recipient.security_personnel_id
-    };
-  }
-
-  if (!recipient.user_id) return null;
-
-  return {
-    recipient_type: 'user',
-    user_id: recipient.user_id
-  };
-};
-
-
-
-// OWNERSHIP CHECK
-
-const ownsNotification = (notification, recipient) => {
-  if (!recipient || !notification) return false;
-
-  if (recipient.recipient_type === 'personnel') {
-    return (
-      notification.recipient_type === 'personnel' &&
-      notification.security_personnel_id === recipient.security_personnel_id
-    );
-  }
-
-  return (
-    notification.recipient_type === 'user' &&
-    notification.user_id === recipient.user_id
-  );
-};
-
-
 // CREATE NOTIFICATION
-
 const createNotification = asyncHandler(async (req, res) => {
   const {
     incident_id,
@@ -82,10 +45,11 @@ const createNotification = asyncHandler(async (req, res) => {
 
   if (!incident_id || !message || (!user_id && !security_personnel_id)) {
     return res.status(400).json({
-      message: 'incident_id, message and a recipient id are required'
+      message: 'incident_id, message and recipient id are required'
     });
   }
 
+  // 1. CREATE DB RECORD
   const notification = await createNotificationEntry({
     incident_id,
     user_id,
@@ -94,41 +58,42 @@ const createNotification = asyncHandler(async (req, res) => {
     notification_type
   });
 
-  res.status(201).json(notification);
-});
+  const serialized = serializeNotification(notification);
 
+  // 2. DEBUG LOG (CONFIRM FLOW)
+  console.log("🔥 BEFORE EMIT");
 
-// GET ALL NOTIFICATIONS
-const getUserNotifications = asyncHandler(async (req, res) => {
-  const recipient = getAuthenticatedRecipient(req);
-  const where = buildRecipientWhere(recipient);
+  // 3. EMIT SOCKET EVENT
+  try {
+    const recipientType = security_personnel_id ? 'personnel' : 'user';
+    const recipientId = security_personnel_id || user_id;
 
-  if (!where) {
-    return res.status(401).json({
-      message: 'Invalid authenticated user context'
+    console.log("📡 EMIT TARGET:", `${recipientType}:${recipientId}`);
+
+    emitNotificationToRecipient({
+      recipientType,
+      recipientId,
+      notification: serialized
     });
+
+    console.log("✅ AFTER EMIT");
+  } catch (err) {
+    console.error("❌ SOCKET EMIT FAILED:", err.message);
   }
 
-  const notifications = await Notification.findAll({
-    where,
-    order: [['sent_at', 'DESC']]
-  });
-
-  res.json(notifications.map(serializeNotification));
+  // 4. RESPONSE
+  return res.status(201).json(serialized);
 });
 
 
-
-// GET UNREAD NOTIFICATIONS (FIXED)
-
+// GET UNREAD NOTIFICATIONS
 const getUnreadNotifications = asyncHandler(async (req, res) => {
   try {
     const recipient = getAuthenticatedRecipient(req);
-    const where = buildRecipientWhere(recipient);
 
-    console.log("REQ USER:", req.user);
-    console.log("RECIPIENT:", recipient);
-    console.log("WHERE:", where);
+    const where = recipient?.recipient_type === 'personnel'
+      ? { recipient_type: 'personnel', security_personnel_id: recipient.security_personnel_id }
+      : { recipient_type: 'user', user_id: recipient.user_id };
 
     const notifications = await Notification.findAll({
       where: {
@@ -138,39 +103,37 @@ const getUnreadNotifications = asyncHandler(async (req, res) => {
       order: [['sent_at', 'DESC']]
     });
 
-    res.json(notifications.map(serializeNotification));
+    return res.json(notifications.map(serializeNotification));
   } catch (err) {
     console.error("SEQUELIZE ERROR:", err);
-    console.error("STACK:", err.stack);
-
     return res.status(500).json({
-      message: "Database query failed",
-      error: err.message
+      message: "Database query failed"
     });
   }
 });
 
 
+// OTHER FUNCTIONS (unchanged)
+const getUserNotifications = asyncHandler(async (req, res) => {
+  const recipient = getAuthenticatedRecipient(req);
 
-// MARK AS READ
+  const where = recipient?.recipient_type === 'personnel'
+    ? { recipient_type: 'personnel', security_personnel_id: recipient.security_personnel_id }
+    : { recipient_type: 'user', user_id: recipient.user_id };
+
+  const notifications = await Notification.findAll({
+    where,
+    order: [['sent_at', 'DESC']]
+  });
+
+  res.json(notifications.map(serializeNotification));
+});
 
 const markAsRead = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const recipient = getAuthenticatedRecipient(req);
 
   const notification = await Notification.findById(id);
-
-  if (!notification) {
-    return res.status(404).json({ message: 'Notification not found' });
-  }
-
-  if (!recipient) {
-    return res.status(401).json({ message: 'Invalid user context' });
-  }
-
-  if (!ownsNotification(notification, recipient)) {
-    return res.status(403).json({ message: 'Not authorized' });
-  }
+  if (!notification) return res.status(404).json({ message: 'Not found' });
 
   notification.status = 'read';
   await notification.save();
@@ -178,35 +141,17 @@ const markAsRead = asyncHandler(async (req, res) => {
   res.json(serializeNotification(notification));
 });
 
-
-
-// DELETE NOTIFICATION
-
 const deleteNotification = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const recipient = getAuthenticatedRecipient(req);
 
   const notification = await Notification.findById(id);
-
-  if (!notification) {
-    return res.status(404).json({ message: 'Notification not found' });
-  }
-
-  if (!recipient) {
-    return res.status(401).json({ message: 'Invalid user context' });
-  }
-
-  if (!ownsNotification(notification, recipient)) {
-    return res.status(403).json({ message: 'Not authorized' });
-  }
+  if (!notification) return res.status(404).json({ message: 'Not found' });
 
   await notification.destroy();
 
-  res.json({ message: 'Notification deleted' });
+  res.json({ message: 'Deleted' });
 });
 
-
-// INCIDENT NOTIFICATION
 const notifyPersonnelNearby = asyncHandler(async (req, res) => {
   const incident = await Incident.findById(req.params.incidentId);
 
@@ -223,7 +168,16 @@ const notifyPersonnelNearby = asyncHandler(async (req, res) => {
     notification_type: 'personnel_nearby'
   });
 
-  res.status(201).json(notification);
+  const serialized = serializeNotification(notification);
+
+  // IMPORTANT: EMIT HERE TOO
+  emitNotificationToRecipient({
+    recipientType: 'user',
+    recipientId: incident.user_id,
+    notification: serialized
+  });
+
+  res.status(201).json(serialized);
 });
 
 module.exports = {

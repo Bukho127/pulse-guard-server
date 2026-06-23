@@ -88,9 +88,10 @@ io.use((socket, next) => {
 
 io.on('connection', (socket) => {
   if (socket.user?.role === 'personnel') {
-    const personnelId = socket.user.security_personnel_id || socket.user.id;
+    const personnelId = socket.user.security_personnel_id || socket.user.user_id;
     if (personnelId) {
       socket.join(`personnel:${personnelId}`);
+      console.log("SOCKET JOIN ID:", personnelId);
     }
   } else {
     const userId = socket.user?.user_id || socket.user?.id;

@@ -2,7 +2,7 @@ const Incident = require('../models/incidentModel');
 const PolicePersonnel = require('../models/policePersonnelModel');
 const Notification = require('../models/notificationModel');
 const { Queue, Worker } = require('bullmq');
-
+const { emitNotificationToRecipient } = require('./socketService');
 const useBullQueue = process.env.NOTIFICATION_QUEUE_DRIVER === 'bull';
 
 let incidentNotificationQueue = null;
@@ -67,6 +67,20 @@ const notifyPolicePersonnelForIncident = async (incident_id) => {
         validate: false           // Skip validation for speed
       });
 
+      officers.forEach((officer) => {
+        emitNotificationToRecipient({
+          recipientType: 'personnel',
+          recipientId: officer.security_personnel_id,
+          notification: {
+            incident_id: incident.incident_id,
+            security_personnel_id: officer.security_personnel_id,
+            message: message,
+            recipient_type: 'personnel',
+            notification_type: 'general'
+          }
+        });
+      });
+
       console.log(`Batch ${Math.floor(offset / batchSize) + 1}: Notified ${officers.length} personnel`);
 
       totalNotified += officers.length;
@@ -108,7 +122,7 @@ const queueIncidentPersonnelNotifications = async (incident) => {
 
   if (!queue) {
     console.log('Notification queue disabled. Executing sync in-memory notification.');
-    return notifyPolicePersonnelForIncident(incident.incident_id).catch(err => 
+    return notifyPolicePersonnelForIncident(incident.incident_id).catch(err =>
       console.error('In-memory notification failed:', err.message)
     );
   }
@@ -133,12 +147,12 @@ const startIncidentNotificationWorker = async () => {
     async (job) => {
       const startTime = Date.now();
       console.log(`Processing job ${job.id} for incident ${job.data.incident_id}...`);
-      
+
       const result = await notifyPolicePersonnelForIncident(job.data.incident_id);
-      
+
       const duration = Date.now() - startTime;
       console.log(`Job ${job.id} completed in ${duration}ms. Total notified: ${result?.notified || 0} personnel.`);
-      
+
       return result;
     },
     {
