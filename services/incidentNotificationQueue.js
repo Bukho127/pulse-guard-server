@@ -164,11 +164,11 @@ const startIncidentNotificationWorker = async () => {
   );
 
   incidentNotificationWorker.on('completed', (job, result) => {
-    console.log(`✓ Job ${job.id} completed successfully. Notified ${result?.notified || 0} personnel.`);
+    console.log(`Job ${job.id} completed successfully. Notified ${result?.notified || 0} personnel.`);
   });
 
   incidentNotificationWorker.on('failed', (job, error) => {
-    console.error(`✗ Job ${job?.id} failed:`, error.message);
+    console.error(`Job ${job?.id} failed:`, error.message);
   });
 
   incidentNotificationWorker.on('error', (error) => {

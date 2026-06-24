@@ -27,7 +27,7 @@ services:
     ports:
       - "5001:5001"
     environment:
-      # Database configuration (adjust if using local database)
+      # Database configuration
       DB_HOST: ${DB_HOST:-localhost}
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-password}
@@ -39,6 +39,9 @@ services:
       REDIS_HOST: valkey
       REDIS_PORT: 6379
       
+      # GO MICROSERVICE ROUTING
+      GO_SERVICE_URL: http://go-worker:5002
+      
       # Other env variables
       PORT: 5001
       NODE_ENV: ${NODE_ENV:-development}
@@ -48,15 +51,29 @@ services:
     depends_on:
       valkey:
         condition: service_healthy
+      go-worker: 
+        condition: service_started
     networks:
       - pulse-guard-network
+    volumes:
+      - ./uploads:/app/uploads
     restart: unless-stopped
-    # Uncomment if you want to see logs
-    # logging:
-    #   driver: "json-file"
-    #   options:
-    #     max-size: "10m"
-    #     max-file: "3"
+
+  # Go Microservice Media Processor Worker
+  go-worker:
+    build:
+      context: ../Pulse-guard-worker-golang
+      dockerfile: Dockerfile
+    container_name: pulse-guard-media-worker
+    ports:
+      - "5002:5002"
+    env_file:
+      - ../Pulse-guard-worker-golang/.env
+    networks:
+      - pulse-guard-network
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
 
 volumes:
   valkey-data:

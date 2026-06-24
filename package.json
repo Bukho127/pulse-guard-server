@@ -15,6 +15,7 @@
   "dependencies": {
     "@azure/storage-blob": "^12.31.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "axios": "^1.18.1",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.78.0",
     "chroma-js": "^3.2.0",
