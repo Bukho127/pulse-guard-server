@@ -1,6 +1,15 @@
 const express = require('express');
-const { getHeatmapData, getHeatmapByDateRange,  getHeatmapByMonth, getOSRMRoute } = require('../controllers/heatmapController');
-const { protect, authorizePersonnel } = require('../middleware/authMiddleware');
+const { 
+    getHeatmapData, 
+    getHeatmapByDateRange,  
+    getHeatmapByMonth, 
+    getOSRMRoute 
+} = require('../controllers/heatmapController');
+
+const { 
+    protect, 
+    authorizePersonnel 
+} = require('../middleware/authMiddleware');
 
 const router = express.Router();
 

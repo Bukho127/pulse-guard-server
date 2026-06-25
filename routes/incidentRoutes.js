@@ -10,7 +10,11 @@ const {
   getMyIncidents,
   finalizeIncidentVideo
 } = require('../controllers/incidentController');
-const { protect, authorizeUser, authorizePersonnel } = require('../middleware/authMiddleware');
+const { 
+  protect, 
+  authorizeUser, 
+  authorizePersonnel 
+} = require('../middleware/authMiddleware');
 const { upload, validateUpload } = require('../middleware/uploadsMiddleware');
 
 const router = express.Router();

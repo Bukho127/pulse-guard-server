@@ -1,7 +1,11 @@
 const Incident = require('../models/incidentModel');
 const PolicePersonnel = require('../models/policePersonnelModel');
 const Notification = require('../models/notificationModel');
-const { Queue, Worker } = require('bullmq');
+const {
+   Queue,
+   Worker 
+  } = require('bullmq');
+  
 const { emitNotificationToRecipient } = require('./socketService');
 const useBullQueue = process.env.NOTIFICATION_QUEUE_DRIVER === 'bull';
 
