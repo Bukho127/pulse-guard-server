@@ -12,7 +12,6 @@ const { getIo } = require('../services/socketService');
 
 const GO_SERVICE_URL = process.env.GO_SERVICE_URL || 'http://go-worker:5002';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
 
 const getIncidentReporterInclude = () => [{
   model: User,
@@ -29,7 +28,6 @@ const getAllIncidentsQuery = () => ({
   order: [['created_at', 'DESC']]
 });
 
-// ─── CREATE ─────────────────────────────────────────────────────────────────
 
 const createIncident = async (req, res) => {
   console.log('[createIncident] Called');
@@ -51,8 +49,8 @@ const createIncident = async (req, res) => {
       console.error('[createIncident] Location resolve failed:', geoError.message);
     }
 
-    // 1. Persist the incident immediately with a placeholder URL.
-    //    The Go worker will call back via /internal/video-complete to set the real URL.
+    // Persist the incident immediately with a placeholder URL.
+    // The Go worker will call back via /internal/video-complete to set the real URL.
     const incident = await Incident.create({
       user_id,
       video_url: 'processing',
@@ -65,9 +63,8 @@ const createIncident = async (req, res) => {
     await incident.reload();
     console.log('[createIncident] Incident created with ID:', incident.incident_id);
 
-    // 2. Hand off the video to the Go worker.
-    //    req.file.containerPath was set by validateUpload middleware —
-    //    it is the /app/uploads/<filename> path that Go sees on the shared volume.
+    // Hand off the video to the Go worker.
+    // req.file.containerPath was set by validateUpload middleware 
     console.log('[createIncident] Incident created with ID:', incident.incident_id);
 
     axios.post(`${GO_SERVICE_URL}/process-video`, {
@@ -100,7 +97,7 @@ const createIncident = async (req, res) => {
   }
 };
 
-// ─── WEBHOOK FROM GO WORKER ──────────────────────────────────────────────────
+
 
 // Called by the Go worker via PingExpressWebhook once the Azure upload completes.
 // Route: POST /internal/video-complete
@@ -117,8 +114,8 @@ const finalizeIncidentVideo = async (req, res) => {
 
     console.log(`[finalizeIncidentVideo] Incident ${incidentId} video ready: ${videoUrl}`);
 
-    // Optional: emit a Socket.io event so the dashboard updates in real-time
-    req.io.emit('video-uploaded', { incidentId, videoUrl });
+   
+    //req.io.emit('video-uploaded', { incidentId, videoUrl });
 
     return res.status(200).json({ success: true });
   } catch (err) {
@@ -127,7 +124,7 @@ const finalizeIncidentVideo = async (req, res) => {
   }
 };
 
-// ─── READ ────────────────────────────────────────────────────────────────────
+
 
 const getIncidents = async (req, res) => {
   try {
@@ -218,7 +215,7 @@ const getIncidentById = async (req, res) => {
   }
 };
 
-// ─── UPDATE ──────────────────────────────────────────────────────────────────
+
 
 const updateIncidentStatus = async (req, res) => {
   try {
@@ -261,7 +258,7 @@ const updateIncidentStatus = async (req, res) => {
   }
 };
 
-// ─── DELETE ──────────────────────────────────────────────────────────────────
+
 
 const deleteIncident = async (req, res) => {
   try {
