@@ -1,0 +1,4 @@
+
+go-worker/.env
+go-worker/*.exe
+go-worker/pulse-guard-worker

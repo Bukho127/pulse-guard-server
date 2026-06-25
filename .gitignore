@@ -23,4 +23,7 @@ build/
 
 # Editor
 .vscode/
-.idea/
+.idea/go-worker/.env 
+go-worker/*.exe 
+go-worker/main.exe 
+go-worker/cd 
