@@ -7,7 +7,10 @@ const {
   updateUser,
   deleteUser,
 } = require('../controllers/userControllers.js');
-const { protect, authorizePersonnel } = require('../middleware/authMiddleware');
+const { 
+  protect, 
+  authorizePersonnel 
+} = require('../middleware/authMiddleware');
 
 const router = express.Router();
 

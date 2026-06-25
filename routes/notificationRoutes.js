@@ -6,7 +6,9 @@ const {
   deleteNotification,
   notifyPersonnelNearby
 } = require('../controllers/notificationController.js');
-const { protect, authorizePersonnel } = require('../middleware/authMiddleware.js');
+const { 
+  protect, 
+  authorizePersonnel } = require('../middleware/authMiddleware.js');
 
 const router = express.Router();
 
