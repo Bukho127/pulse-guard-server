@@ -20,8 +20,9 @@ func main() {
 		log.Println("No .env file found, reading global environment")
 	}
 
-	// Spin background workers
-	for w := 1; w <= 2; w++ {
+	// Starting 5 worker goroutines to process jobs concurrently
+	//this is useful for handling multiple video processing tasks at the same time
+	for w := 1; w <= 5; w++ {
 		go func(workerID int) {
 			for job := range jobQueue {
 				// Calling the public processor function
