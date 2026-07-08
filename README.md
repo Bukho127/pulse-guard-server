@@ -4,9 +4,9 @@
 
 **Pulse Guard** is a community-driven video crime reporting platform designed to improve public safety across Cape Town townships. Rather than remaining passive bystanders, community members can actively contribute to public safety by capturing and submitting video evidence of criminal incidents.
 
-The platform's primary objective is to provide emergency responders and law enforcement with **real-time situational awareness**. Access to visual evidence from the scene enables responders to assess incidents more accurately, prioritize resources, and make informed decisions before arriving on site.
+The platform's primary objective is to provide emergency responders and law enforcement with **real-time situational awareness**. Access to visual evidence from the scene enables responders to assess incidents more accurately, prioritise resources, and make informed decisions before arriving on site.
 
-Every submitted video is reviewed by authorized police personnel. Once an incident has been verified and acknowledged, it becomes part of the platform's crime intelligence data. The incident is then reflected on a community crime heatmap, allowing residents, businesses, researchers, and investors to better understand crime trends and identify areas requiring increased attention.
+Every submitted video is reviewed by authorised police personnel. Once an incident has been verified and acknowledged, it becomes part of the platform's crime intelligence data. The incident is then reflected on a community crime heatmap, allowing residents, businesses, researchers, and investors to better understand crime trends and identify areas requiring increased attention.
 
 Pulse Guard aims to strengthen collaboration between communities and law enforcement by providing a secure, scalable, and reliable platform for reporting, reviewing, and visualizing crime incidents.
 
@@ -34,7 +34,7 @@ The primary backend service manages the application's business logic and exposes
 
 Its responsibilities include:
 
-* User authentication and authorization
+* User authentication and authorisation
 * Incident management
 * Video upload coordination
 * Database operations
@@ -71,7 +71,7 @@ FFmpeg performs several essential tasks before a video is stored:
 * Compressing uploaded videos
 * Reducing file size while maintaining acceptable visual quality
 * Transcoding videos into supported formats
-* Optimizing videos for streaming and playback
+* Optimising videos for streaming and playback
 * Preparing videos for long-term archival
 
 By delegating these operations to FFmpeg through the Go service, the Node.js API remains lightweight and responsive while ensuring consistent media quality.
@@ -108,26 +108,24 @@ This approach offers several advantages:
 
 # Architecture Diagram 
 
+```text
 Mobile App
       │
       ▼
 Node.js + Express API
       │
-      ├────────────► MySQL
+      ├────────► MySQL
+      ├────────► Go Video Service
+      │               │
+      │               ▼
+      │            FFmpeg
+      │               │
+      ▼               ▼
+Azure Blob Storage
       │
-      ├────────────► Go Video Service
-      │                    │
-      │                    ▼
-      │                 FFmpeg
-      │                    │
-      │                    ▼
-      └────────────► Azure Blob Storage
-                           │
-                           ▼
-                    Incident Returned
-                           │
-                           ▼
-                 Police Review & Acknowledgement
-                           │
-                           ▼
-                   H3 Heatmap Generation
+      ▼
+Police Review
+      │
+      ▼
+H3 Heatmap
+```
