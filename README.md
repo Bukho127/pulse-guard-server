@@ -24,6 +24,7 @@ The Pulse Guard backend is built using a polyglot architecture, where each techn
 | **FFmpeg**      | Video compression, transcoding, and optimization before storage |
 | **Multer**      | File handling                                                   |
 | **Azure Blob**  | Object storage for all the processed videos                     |
+| **H3.js**       | For Heatmap generation                                          |
 
 
 
