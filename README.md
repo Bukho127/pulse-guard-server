@@ -105,8 +105,7 @@ This approach offers several advantages:
 * Fast geographic queries
 * Improved privacy compared to displaying exact coordinates
 * Scalable heatmap generation for thousands of incidents
-
-# Architecture Diagram 
+ 
 
 ## System Architecture
 
