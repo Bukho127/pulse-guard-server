@@ -110,5 +110,5 @@ This approach offers several advantages:
 
 ## System Architecture
 
-![Pulse Guard Architecture](downloads/pulse-guard-diagram.draw.io.svg)
+![Pulse Guard Architecture](docs/pulse-guard-diagram.draw.io.svg)
 
