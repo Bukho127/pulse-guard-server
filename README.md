@@ -108,24 +108,7 @@ This approach offers several advantages:
 
 # Architecture Diagram 
 
-```text
-Mobile App
-      │
-      ▼
-Node.js + Express API
-      │
-      ├────────► MySQL
-      ├────────► Go Video Service
-      │               │
-      │               ▼
-      │            FFmpeg
-      │               │
-      ▼               ▼
-Azure Blob Storage
-      │
-      ▼
-Police Review
-      │
-      ▼
-H3 Heatmap
-```
+## System Architecture
+
+![Pulse Guard Architecture](downloads/pulse-guard-diagram.draw.io.svg)
+
