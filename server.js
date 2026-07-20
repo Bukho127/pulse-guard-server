@@ -4,8 +4,12 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { connectDB, sequelize } = require('./config/db');
+const swaggerUI = require('swagger-ui-express');
+const YAML = require('js-yaml');
+const fs = require('fs');
 require('dotenv').config();
 const { setIo } = require('./services/socketService');
+const swaggerDocument = YAML.load(fs.readFileSync('docs/swagger.yaml', 'utf8'));
 const { startIncidentNotificationWorker } = require('./services/incidentNotificationQueue');
 
 const PORT = process.env.PORT || 5001;
@@ -60,6 +64,7 @@ const corsOptions = {
 };
 
 // ==================== MIDDLEWARE ====================
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 app.use(cors(corsOptions));
 app.use(express.json());
 

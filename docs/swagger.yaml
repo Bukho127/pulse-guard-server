@@ -1,0 +1,1273 @@
+openapi: 3.0.3
+info:
+  title: Pulse Guard API
+  version: 1.0.0
+  description: API documentation for Pulse Guard's user reporting, police review, notifications, and heatmap services.
+servers:
+  - url: http://localhost:5001
+    description: Local development server
+
+tags:
+  - name: Auth
+  - name: Users
+  - name: Police Personnel
+  - name: Incidents
+  - name: Notifications
+  - name: Heatmap
+  - name: Internal
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a community user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '200':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in a community user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/personnel/login:
+    post:
+      tags: [Auth]
+      summary: Log in police personnel
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonnelLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users:
+    post:
+      tags: [Users]
+      summary: Register a community user using the legacy route
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '200':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    get:
+      tags: [Users]
+      summary: List all users
+      description: Requires a police personnel bearer token.
+      responses:
+        '200':
+          description: Users returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/MissingToken'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/login:
+    post:
+      tags: [Auth]
+      summary: Log in a community user using the legacy route
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /users/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      tags: [Users]
+      summary: Get a user by ID
+      description: Users can view their own profile. Police personnel can view any user.
+      responses:
+        '200':
+          description: User returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Users]
+      summary: Update a user by ID
+      description: Users can update their own profile. Police personnel can update any user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Users]
+      summary: Delete a user by ID
+      description: Users can delete their own profile. Police personnel can delete any user.
+      responses:
+        '200':
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /police:
+    post:
+      tags: [Police Personnel]
+      summary: Register police personnel
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicePersonnelCreate'
+      responses:
+        '201':
+          description: Officer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicePersonnel'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    get:
+      tags: [Police Personnel]
+      summary: List police personnel
+      description: Requires a police personnel bearer token.
+      responses:
+        '200':
+          description: Officers returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PolicePersonnel'
+        '401':
+          $ref: '#/components/responses/MissingToken'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /police/login:
+    post:
+      tags: [Auth]
+      summary: Log in police personnel using the legacy route
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonnelLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /police/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PersonnelId'
+    get:
+      tags: [Police Personnel]
+      summary: Get police personnel by ID
+      description: Requires a police personnel bearer token.
+      responses:
+        '200':
+          description: Officer returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicePersonnel'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Police Personnel]
+      summary: Update police personnel by ID
+      description: Requires a police personnel bearer token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicePersonnelUpdate'
+      responses:
+        '200':
+          description: Officer updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicePersonnel'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Police Personnel]
+      summary: Delete police personnel by ID
+      description: Requires a police personnel bearer token.
+      responses:
+        '200':
+          description: Officer deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /incidents:
+    post:
+      tags: [Incidents]
+      summary: Create an incident report
+      description: Requires a community user bearer token. Uploads a video and sends it for processing.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IncidentCreate'
+      responses:
+        '201':
+          description: Incident created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/MissingToken'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    get:
+      tags: [Incidents]
+      summary: List incidents
+      description: Requires a police personnel bearer token. Supply both page and limit for pagination.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Incidents returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags: [Incidents]
+      summary: Unsupported incident update route
+      responses:
+        '400':
+          description: Use PUT /incidents/{incidentId}/status instead.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /incidents/my:
+    get:
+      tags: [Incidents]
+      summary: List incidents submitted by the authenticated user
+      description: Requires a community user bearer token.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: User incidents returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentListResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /incidents/my/{incidentId}:
+    parameters:
+      - $ref: '#/components/parameters/IncidentId'
+    get:
+      tags: [Incidents]
+      summary: Get one incident submitted by the authenticated user
+      description: Requires a community user bearer token.
+      responses:
+        '200':
+          description: Incident returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /incidents/all:
+    get:
+      tags: [Incidents]
+      summary: List all incidents without pagination
+      description: Requires a police personnel bearer token.
+      responses:
+        '200':
+          description: Incidents returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentListResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /incidents/{incidentId}:
+    parameters:
+      - $ref: '#/components/parameters/IncidentId'
+    get:
+      tags: [Incidents]
+      summary: Get an incident by ID
+      description: Requires a police personnel bearer token.
+      responses:
+        '200':
+          description: Incident returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Incidents]
+      summary: Delete an incident by ID
+      description: Requires a police personnel bearer token.
+      responses:
+        '200':
+          description: Incident deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /incidents/{incidentId}/status:
+    parameters:
+      - $ref: '#/components/parameters/IncidentId'
+    put:
+      tags: [Incidents]
+      summary: Update an incident status
+      description: Requires a police personnel bearer token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentStatusUpdate'
+      responses:
+        '200':
+          description: Incident updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incident'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /internal/video-complete:
+    post:
+      tags: [Internal]
+      summary: Complete video processing for an incident
+      description: Called by the Go media worker after processed video upload is complete.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [incidentId, videoUrl]
+              properties:
+                incidentId:
+                  type: integer
+                  example: 42
+                videoUrl:
+                  type: string
+                  format: uri
+                  example: https://storage.example.com/videos/incident-42.mp4
+      responses:
+        '200':
+          description: Incident video URL updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /notifications:
+    post:
+      tags: [Notifications]
+      summary: Create a notification
+      description: Requires a police personnel bearer token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationCreate'
+      responses:
+        '201':
+          description: Notification created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /notifications/unread:
+    get:
+      tags: [Notifications]
+      summary: Get unread notifications
+      description: Returns unread notifications for the authenticated user or police personnel account.
+      responses:
+        '200':
+          description: Notifications returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 2
+                  notifications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+        '401':
+          $ref: '#/components/responses/MissingToken'
+
+  /notifications/incidents/{incidentId}/personnel-nearby:
+    parameters:
+      - $ref: '#/components/parameters/IncidentId'
+    post:
+      tags: [Notifications]
+      summary: Notify a reporter that personnel are nearby
+      description: Requires a police personnel bearer token.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Police personnel are nearby and responding to your incident.
+      responses:
+        '201':
+          description: Notification created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications/{id}/read:
+    parameters:
+      - $ref: '#/components/parameters/NotificationId'
+    put:
+      tags: [Notifications]
+      summary: Mark a notification as read
+      responses:
+        '200':
+          description: Notification updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications/{id}:
+    parameters:
+      - $ref: '#/components/parameters/NotificationId'
+    delete:
+      tags: [Notifications]
+      summary: Delete a notification
+      responses:
+        '200':
+          description: Notification deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /heatmap:
+    get:
+      tags: [Heatmap]
+      summary: Get acknowledged incident heatmap data
+      description: Requires a police personnel bearer token.
+      responses:
+        '200':
+          description: Heatmap data returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeatmapResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /heatmap/range:
+    get:
+      tags: [Heatmap]
+      summary: Get heatmap data by date range
+      description: Requires a police personnel bearer token.
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: 2026-01-01
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: 2026-06-30
+      responses:
+        '200':
+          description: Heatmap data returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeatmapResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /heatmap/month:
+    get:
+      tags: [Heatmap]
+      summary: Get heatmap data by month
+      description: Requires a police personnel bearer token.
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\\d{4}-\\d{2}$'
+          example: 2026-06
+      responses:
+        '200':
+          description: Heatmap data returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeatmapResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /heatmap/route:
+    get:
+      tags: [Heatmap]
+      summary: Get a driving route geometry from OSRM
+      description: Requires a police personnel bearer token and a reachable OSRM service.
+      parameters:
+        - name: startLng
+          in: query
+          required: true
+          schema:
+            type: number
+          example: 18.4232
+        - name: startLat
+          in: query
+          required: true
+          schema:
+            type: number
+          example: -33.9249
+        - name: endLng
+          in: query
+          required: true
+          schema:
+            type: number
+          example: 18.4241
+        - name: endLat
+          in: query
+          required: true
+          schema:
+            type: number
+          example: -33.9258
+      responses:
+        '200':
+          description: GeoJSON LineString geometry returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeoJsonLineString'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+    PersonnelId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 1
+    IncidentId:
+      name: incidentId
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 42
+    NotificationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      example: 10
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+      example: 1
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+      example: 10
+
+  responses:
+    MissingToken:
+      description: Access token required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MessageResponse'
+    Unauthorized:
+      description: Invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MessageResponse'
+    Forbidden:
+      description: Invalid token, expired token, or insufficient role permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MessageResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MessageResponse'
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/MessageResponse'
+              - $ref: '#/components/schemas/ErrorResponse'
+    ServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    AuthToken:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Not authorized
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+          example: Validation error
+        details:
+          type: array
+          nullable: true
+          items:
+            type: object
+
+    UserCreate:
+      type: object
+      required: [full_name, email, password]
+      properties:
+        full_name:
+          type: string
+          example: Amina Jacobs
+        email:
+          type: string
+          format: email
+          example: amina@example.com
+        password:
+          type: string
+          format: password
+          example: StrongPassword123
+
+    UserUpdate:
+      type: object
+      properties:
+        full_name:
+          type: string
+          example: Amina Jacobs
+        email:
+          type: string
+          format: email
+          example: amina@example.com
+        password:
+          type: string
+          format: password
+          example: NewStrongPassword123
+
+    UserLogin:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: amina@example.com
+        password:
+          type: string
+          format: password
+          example: StrongPassword123
+
+    User:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          example: 1
+        full_name:
+          type: string
+          example: Amina Jacobs
+        email:
+          type: string
+          format: email
+          example: amina@example.com
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PersonnelLogin:
+      type: object
+      required: [force_number, password]
+      properties:
+        force_number:
+          type: string
+          example: 1234567-8
+        password:
+          type: string
+          format: password
+          example: StrongPassword123
+
+    PolicePersonnelCreate:
+      type: object
+      required: [name, surname, email, force_number, role_title, password]
+      properties:
+        name:
+          type: string
+          example: Thabo
+        surname:
+          type: string
+          example: Mbeki
+        email:
+          type: string
+          format: email
+          example: thabo.mbeki@saps.example
+        force_number:
+          type: string
+          pattern: '^[0-9]{7}-[0-9]{1}$'
+          example: 1234567-8
+        role_title:
+          type: string
+          example: Sergeant
+        password:
+          type: string
+          format: password
+          example: StrongPassword123
+
+    PolicePersonnelUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Thabo
+        surname:
+          type: string
+          example: Mbeki
+        email:
+          type: string
+          format: email
+          example: thabo.mbeki@saps.example
+        force_number:
+          type: string
+          example: 1234567-8
+        role_title:
+          type: string
+          example: Sergeant
+        password:
+          type: string
+          format: password
+          example: NewStrongPassword123
+
+    PolicePersonnel:
+      type: object
+      properties:
+        security_personnel_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Thabo
+        surname:
+          type: string
+          example: Mbeki
+        email:
+          type: string
+          format: email
+          example: thabo.mbeki@saps.example
+        force_number:
+          type: string
+          example: 1234567-8
+        role_title:
+          type: string
+          example: Sergeant
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    IncidentCreate:
+      type: object
+      required: [video, latitude, longitude]
+      properties:
+        video:
+          type: string
+          format: binary
+          description: Video file. Supported MIME types include mp4, quicktime, avi, and matroska.
+        latitude:
+          type: number
+          example: -33.9249
+        longitude:
+          type: number
+          example: 18.4232
+
+    IncidentStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, acknowledged, dismissed]
+          example: acknowledged
+
+    Incident:
+      type: object
+      properties:
+        incident_id:
+          type: integer
+          example: 42
+        user_id:
+          type: integer
+          example: 1
+        video_url:
+          type: string
+          example: processing
+        latitude:
+          type: string
+          example: '-33.92490000'
+        longitude:
+          type: string
+          example: '18.42320000'
+        address:
+          type: string
+          nullable: true
+          example: Khayelitsha, Cape Town
+        status:
+          type: string
+          enum: [pending, acknowledged, dismissed]
+          example: pending
+        created_at:
+          type: string
+          format: date-time
+        acknowledged_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        User:
+          $ref: '#/components/schemas/IncidentReporter'
+
+    IncidentReporter:
+      type: object
+      properties:
+        full_name:
+          type: string
+          example: Amina Jacobs
+        email:
+          type: string
+          format: email
+          example: amina@example.com
+
+    IncidentListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incident'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 25
+        pages:
+          type: integer
+          example: 3
+        hasPrev:
+          type: boolean
+          example: false
+        hasNext:
+          type: boolean
+          example: true
+
+    NotificationCreate:
+      type: object
+      required: [incident_id, message]
+      description: Supply either user_id or security_personnel_id as the recipient.
+      properties:
+        incident_id:
+          type: integer
+          example: 42
+        user_id:
+          type: integer
+          nullable: true
+          example: 1
+        security_personnel_id:
+          type: integer
+          nullable: true
+          example: null
+        message:
+          type: string
+          example: Your incident has been acknowledged.
+        notification_type:
+          type: string
+          enum: [general, incident_acknowledged, personnel_nearby]
+          default: general
+          example: general
+
+    Notification:
+      type: object
+      properties:
+        notification_id:
+          type: integer
+          example: 10
+        incident_id:
+          type: integer
+          example: 42
+        user_id:
+          type: integer
+          nullable: true
+          example: 1
+        security_personnel_id:
+          type: integer
+          nullable: true
+          example: null
+        recipient_type:
+          type: string
+          enum: [user, personnel]
+          example: user
+        notification_type:
+          type: string
+          enum: [general, incident_acknowledged, personnel_nearby]
+          example: incident_acknowledged
+        message:
+          type: string
+          example: Your incident has been acknowledged. Help is on the way.
+        status:
+          type: string
+          enum: [sent, read]
+          example: sent
+        sent_at:
+          type: string
+          format: date-time
+
+    HeatmapResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          example: heatmap
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/HeatmapFeature'
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            totalIncidents: 12
+            totalHexagons: 5
+            resolution: 10
+            colorScale: green->yellow->orange->red
+
+    HeatmapFeature:
+      type: object
+      properties:
+        h3Index:
+          type: string
+          example: 8a1fb46622dffff
+        latitude:
+          type: number
+          example: -33.9249
+        longitude:
+          type: number
+          example: 18.4232
+        count:
+          type: integer
+          example: 3
+        weight:
+          type: integer
+          example: 3
+        color:
+          type: string
+          example: '#ff8c00'
+        intensity:
+          type: number
+          example: 0.2
+        boundary:
+          type: array
+          items:
+            type: object
+            properties:
+              lat:
+                type: number
+              lng:
+                type: number
+
+    GeoJsonLineString:
+      type: object
+      properties:
+        type:
+          type: string
+          example: LineString
+        coordinates:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+          example:
+            - [18.4232, -33.9249]
+            - [18.4241, -33.9258]
