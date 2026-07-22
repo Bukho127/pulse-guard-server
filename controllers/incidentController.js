@@ -125,6 +125,12 @@ const finalizeIncidentVideo = async (req, res) => {
 };
 
 
+const unsupportedPutIncidents = (req, res) => {
+  return res.status(400).json({
+    message: 'PUT /incidents is not supported. Use PUT /incidents/:incidentId/status to update incident status.'
+  });
+};
+
 
 const getIncidents = async (req, res) => {
   try {
@@ -278,6 +284,7 @@ const deleteIncident = async (req, res) => {
 module.exports = {
   createIncident,
   finalizeIncidentVideo,
+  unsupportedPutIncidents,
   getIncidents,
   getAllIncidents,
   getMyIncidents,

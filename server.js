@@ -21,9 +21,7 @@ const policePersonnelRoutes = require('./routes/policePersonnelRoutes.js');
 const incidentRoutes = require('./routes/incidentRoutes');
 const heatmapRoutes = require('./routes/heatmapRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-
-
-
+const notFound = require('./middleware/notFoundMiddleware');
 
 
 // ==================== DATABASE ASSOCIATIONS ====================
@@ -114,9 +112,7 @@ app.use('/', userRoutes);
 app.use('/', notificationRoutes);
 
 // ==================== 404 HANDLER ====================
-app.use((req, res) => {
-  res.status(404).json({ message: 'Route not found' });
-});
+app.use(notFound);
 
 // ==================== DATABASE & SERVER START ====================
 connectDB().then(async (connected) => {

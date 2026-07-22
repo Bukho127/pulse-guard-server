@@ -8,24 +8,23 @@ const {
   updateIncidentStatus,
   deleteIncident,
   getMyIncidents,
-  finalizeIncidentVideo
+  finalizeIncidentVideo,
+  unsupportedPutIncidents
 } = require('../controllers/incidentController');
 const { 
   protect, 
   authorizeUser, 
   authorizePersonnel 
 } = require('../middleware/authMiddleware');
-const { upload, validateUpload } = require('../middleware/uploadsMiddleware');
+const { upload, 
+  validateUpload } = require('../middleware/uploadsMiddleware');
+const rateLimiter = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
-router.post('/incidents', protect, authorizeUser, upload.single('video'), validateUpload, createIncident);
+router.post('/incidents', protect, authorizeUser, rateLimiter, upload.single('video'), validateUpload, createIncident);
 router.post('/internal/video-complete', finalizeIncidentVideo);
-router.put('/incidents', (req, res) => {
-  return res.status(400).json({
-    message: 'PUT /incidents is not supported. Use PUT /incidents/:incidentId/status to update incident status.'
-  });
-});
+router.put('/incidents', unsupportedPutIncidents);
 
 router.get('/incidents/my', protect, authorizeUser, getMyIncidents);
 router.get('/incidents/my/:incidentId', protect, authorizeUser, getMyIncidentById);
