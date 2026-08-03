@@ -5,48 +5,173 @@ const Incident = require('../models/incidentModel');
 
 const H3_RESOLUTION = 10; // Adjust: 12 = ~1km, 13 = ~250m, 14 = ~65m
 const colorScale = chroma.scale(['green', 'yellow', 'orange', 'red']).domain([0, 15]);
+const CAPE_TOWN_BOUNDS = {
+  minLat: -34.4,
+  maxLat: -33.5,
+  minLng: 18.2,
+  maxLng: 19.0
+};
+
+const hasValidCoordinates = (incident) => {
+  const latitude = Number(incident.latitude);
+  const longitude = Number(incident.longitude);
+
+  return Number.isFinite(latitude) && Number.isFinite(longitude);
+};
+
+const isWithinCapeTownBounds = (incident) => {
+  if (!hasValidCoordinates(incident)) {
+    return false;
+  }
+
+  const latitude = Number(incident.latitude);
+  const longitude = Number(incident.longitude);
+
+  return latitude >= CAPE_TOWN_BOUNDS.minLat
+    && latitude <= CAPE_TOWN_BOUNDS.maxLat
+    && longitude >= CAPE_TOWN_BOUNDS.minLng
+    && longitude <= CAPE_TOWN_BOUNDS.maxLng;
+};
+
+const getIncidentCoordinateDebugFields = (incident) => ({
+  incident_id: incident.incident_id,
+  address: incident.address,
+  latitude: incident.latitude,
+  longitude: incident.longitude,
+  coordinates: incident.coordinates || null,
+  location: incident.location || null,
+  city: incident.city || null,
+  province: incident.province || null
+});
+
+const buildHeatmapMetadata = (incidents, heatmapFeatures, extra = {}) => ({
+  totalIncidents: incidents.length,
+  incidentsInsideCapeTownBounds: incidents.filter(isWithinCapeTownBounds).length,
+  incidentsOutsideCapeTownBounds: incidents.filter((incident) => !isWithinCapeTownBounds(incident)).length,
+  totalHexagons: heatmapFeatures.length,
+  ...extra,
+  resolution: H3_RESOLUTION,
+  colorScale: 'greenâ†’yellowâ†’orangeâ†’red'
+});
+
+const logHeatmapDiagnostics = (label, incidents, features, metadata = {}) => {
+  const validCoordinateCount = incidents.filter(hasValidCoordinates).length;
+  const insideCapeTownBoundsCount = incidents.filter(isWithinCapeTownBounds).length;
+  const outsideCapeTownBounds = incidents
+    .filter((incident) => !isWithinCapeTownBounds(incident))
+    .map(getIncidentCoordinateDebugFields);
+  const uniqueH3Indexes = new Set(features.map((feature) => feature.h3Index));
+  const boundaryPoints = features.flatMap((feature) => feature.boundary || []);
+  const bounds = boundaryPoints.reduce((acc, point) => {
+    const lat = Number(point.lat);
+    const lng = Number(point.lng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return acc;
+    }
+
+    return {
+      minLat: Math.min(acc.minLat, lat),
+      maxLat: Math.max(acc.maxLat, lat),
+      minLng: Math.min(acc.minLng, lng),
+      maxLng: Math.max(acc.maxLng, lng)
+    };
+  }, {
+    minLat: Infinity,
+    maxLat: -Infinity,
+    minLng: Infinity,
+    maxLng: -Infinity
+  });
+
+  console.log(`[HEATMAP DEBUG] ${label}`, {
+    totalIncidentsQueried: incidents.length,
+    incidentCoordinateRows: incidents.map(getIncidentCoordinateDebugFields),
+    validCoordinateCount,
+    insideCapeTownBoundsCount,
+    outsideCapeTownBoundsCount: outsideCapeTownBounds.length,
+    outsideCapeTownBounds,
+    uniqueH3IndexesCount: uniqueH3Indexes.size,
+    finalFeaturesLength: features.length,
+    metadataTotalHexagons: metadata.totalHexagons,
+    featuresLengthMatchesMetadata: metadata.totalHexagons === undefined
+      ? 'metadata.totalHexagons not present'
+      : features.length === metadata.totalHexagons,
+    sampleFeatures: features.slice(0, 5).map((feature) => ({
+      h3Index: feature.h3Index,
+      count: feature.count,
+      intensity: feature.intensity,
+      color: feature.color,
+      boundaryLength: Array.isArray(feature.boundary) ? feature.boundary.length : null
+    })),
+    boundaryBounds: boundaryPoints.length ? bounds : null
+  });
+};
 
 // Build H3-based heatmap with smooth colors
 const buildHeatmapData = (incidents) => {
   const incidentsByHex = {};
 
-  // Bin incidents into H3 hexagons
-  incidents.forEach((incident) => {
-    const h3Index = h3.latLngToCell(
-      Number(incident.latitude),
-      Number(incident.longitude),
-      H3_RESOLUTION
-    );
+  const drawableIncidents = incidents.filter(isWithinCapeTownBounds);
+
+  console.log("================================");
+  console.log("Drawable incidents:", drawableIncidents.length);
+
+  drawableIncidents.forEach((incident) => {
+    const lat = Number(incident.latitude);
+    const lng = Number(incident.longitude);
+
+    const h3Index = h3.latLngToCell(lat, lng, H3_RESOLUTION);
+
+    console.log({
+      incidentId: incident.incident_id,
+      lat,
+      lng,
+      h3Index
+    });
 
     if (!incidentsByHex[h3Index]) {
       incidentsByHex[h3Index] = [];
     }
+
     incidentsByHex[h3Index].push(incident);
   });
 
-  // Convert to features with smooth colors
+  console.log("======= HEX SUMMARY =======");
+
+  Object.entries(incidentsByHex).forEach(([hex, list]) => {
+    console.log(hex, "=>", list.length);
+  });
+
+  console.log("===========================");
+
   return Object.entries(incidentsByHex).map(([h3Index, hexIncidents]) => {
+
     const count = hexIncidents.length;
-    const color = colorScale(count).hex(); // Smooth gradient color
-    const center = h3.cellToLatLng(h3Index);
+
     const boundary = h3.cellToBoundary(h3Index);
+    const center = h3.cellToLatLng(h3Index);
 
     return {
-      h3Index: h3Index,
+      h3Index,
       latitude: center[0],
       longitude: center[1],
-      count: count,
-      weight: count, // Keep 'weight' for backward compatibility
-      color: color, // Smooth color for map rendering
-      intensity: Math.min(count / 15, 1), // Normalized 0-1 for opacity
-      boundary: boundary.map(([lat, lng]) => ({ lat, lng })) // Hex polygon for mapping
+      count,
+      weight: count,
+      color: colorScale(count).hex(),
+      intensity: Math.min(count / 15, 1),
+      boundary: boundary.map(([lat, lng]) => ({
+        lat,
+        lng
+      }))
     };
+
   });
+
 };
 
 const getAcknowledgedIncidents = async (where = {}) => {
   return Incident.findAll({
-    attributes: ['latitude', 'longitude'],
+    attributes: ['incident_id', 'address', 'latitude', 'longitude'],
     where: {
       status: 'acknowledged',
       ...where
@@ -58,11 +183,16 @@ const getAcknowledgedIncidents = async (where = {}) => {
 const getHeatmapData = async (req, res) => {
   try {
     const incidents = await getAcknowledgedIncidents();
+    const heatmapFeatures = buildHeatmapData(incidents);
+    logHeatmapDiagnostics('GET /heatmap', incidents, heatmapFeatures);
     res.json({
       type: 'heatmap',
-      features: buildHeatmapData(incidents),
+      features: heatmapFeatures,
       metadata: {
         totalIncidents: incidents.length,
+        incidentsInsideCapeTownBounds: incidents.filter(isWithinCapeTownBounds).length,
+        incidentsOutsideCapeTownBounds: incidents.filter((incident) => !isWithinCapeTownBounds(incident)).length,
+        totalHexagons: heatmapFeatures.length,
         resolution: H3_RESOLUTION,
         colorScale: 'green→yellow→orange→red'
       }
@@ -95,12 +225,17 @@ const getHeatmapByDateRange = async (req, res) => {
         $between: [start, end]
       }
     });
+    const heatmapFeatures = buildHeatmapData(incidents);
+    logHeatmapDiagnostics('GET /heatmap/range', incidents, heatmapFeatures);
 
     res.json({
       type: 'heatmap',
-      features: buildHeatmapData(incidents),
+      features: heatmapFeatures,
       metadata: {
         totalIncidents: incidents.length,
+        incidentsInsideCapeTownBounds: incidents.filter(isWithinCapeTownBounds).length,
+        incidentsOutsideCapeTownBounds: incidents.filter((incident) => !isWithinCapeTownBounds(incident)).length,
+        totalHexagons: heatmapFeatures.length,
         startDate: startDate,
         endDate: endDate,
         resolution: H3_RESOLUTION,
@@ -161,12 +296,19 @@ const getHeatmapByMonth = async (req, res) => {
     });
 
     const heatmapFeatures = buildHeatmapData(incidents);
+    const metadata = {
+      totalHexagons: heatmapFeatures.length
+    };
+
+    logHeatmapDiagnostics('GET /heatmap/month', incidents, heatmapFeatures, metadata);
 
     res.json({
       type: 'heatmap',
       features: heatmapFeatures,
       metadata: {
         totalIncidents: incidents.length,
+        incidentsInsideCapeTownBounds: incidents.filter(isWithinCapeTownBounds).length,
+        incidentsOutsideCapeTownBounds: incidents.filter((incident) => !isWithinCapeTownBounds(incident)).length,
         totalHexagons: heatmapFeatures.length,
         month: month,
         resolution: H3_RESOLUTION,
