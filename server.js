@@ -36,16 +36,31 @@ const Notification = require('./models/notificationModel');
 // ==================== EXPRESS & SERVER SETUP ====================
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: '*'
-  }
-});
 
 // ==================== CORS CONFIGURATION ====================
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
-  : ['http://localhost:3000', 'http://localhost:5173'];
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : [
+      "http://localhost:3000",
+      "http://localhost:5173"
+    ];
+
+
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: false
+  }
+});
+
+// ==================== HEALTH CHECK ====================
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "healthy"
+    });
+});
+
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -55,8 +70,19 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  methods: [
+    'GET', 
+    'POST', 
+    'PUT', 
+    'PATCH', 
+    'DELETE', 
+    'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'Accept', 
+    'Origin', 
+    'X-Requested-With'],
   credentials: false,
   optionsSuccessStatus: 204,
 };
@@ -122,7 +148,7 @@ connectDB().then(async (connected) => {
       console.log('Database synced successfully');
       startIncidentNotificationWorker();
 
-      server.listen(PORT, () => {
+      server.listen(PORT, "0.0.0.0", () => {
         console.log(`Server running on port ${PORT}`);
       });
     } catch (error) {

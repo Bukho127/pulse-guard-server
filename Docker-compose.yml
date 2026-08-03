@@ -1,7 +1,7 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  # Valkey service for the queue
+  # Valkey (Redis-compatible)
   valkey:
     image: valkey/valkey:latest
     container_name: pulse-guard-valkey
@@ -9,57 +9,46 @@ services:
       - "6379:6379"
     volumes:
       - valkey-data:/data
-    networks:
-      - pulse-guard-network
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - pulse-guard-network
 
-  # Node.js application
+  # Express Backend
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: pulse-guard-backend 
+    container_name: pulse-guard-backend
     ports:
       - "5001:5001"
+    env_file:
+      - .env
     environment:
-      # Database configuration
-      DB_HOST: ${DB_HOST:-localhost}
-      DB_USER: ${DB_USER:-root}
-      DB_PASSWORD: ${DB_PASSWORD:-password}
-      DB_NAME: ${DB_NAME:-pulseguard}
-      DB_PORT: ${DB_PORT:-3001}
-      
-      # Valkey configuration
+      PORT: 5001
+      NODE_ENV: production
+
+      # Queue
       NOTIFICATION_QUEUE_DRIVER: bull
       REDIS_HOST: valkey
       REDIS_PORT: 6379
-      
-      # GO MICROSERVICE ROUTING
+
+      # Go Worker
       GO_SERVICE_URL: http://go-worker:5002
-      
-      # Other env variables
-      PORT: 5001
-      NODE_ENV: ${NODE_ENV:-development}
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173}
-      
     depends_on:
       valkey:
         condition: service_healthy
-      go-worker: 
+      go-worker:
         condition: service_started
+    restart: unless-stopped
     networks:
       - pulse-guard-network
-    volumes:
-      - ./uploads:/app/uploads
-    restart: unless-stopped
 
-  # Go Microservice Media Processor Worker
+  # Golang Worker
   go-worker:
     build:
       context: ../Pulse-guard-worker-golang
@@ -69,15 +58,12 @@ services:
       - "5002:5002"
     env_file:
       - ../Pulse-guard-worker-golang/.env
+    restart: unless-stopped
     networks:
       - pulse-guard-network
-    volumes:
-      - ./uploads:/app/uploads
-    restart: unless-stopped
 
 volumes:
   valkey-data:
-    driver: local
 
 networks:
   pulse-guard-network:
