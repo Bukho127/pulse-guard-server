@@ -8,17 +8,17 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
 # Copy the rest of the application code
 COPY . .
 
 # Expose the port your app runs on
-EXPOSE 5000
+EXPOSE 5001
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000', (r) => {if (r.statusCode !== 404) throw new Error(r.statusCode)})"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+CMD node -e "require('http').get('http://localhost:5001/health',res=>process.exit(res.statusCode===200?0:1)).on('error',()=>process.exit(1))"
 
 # Start the application
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]
