@@ -21,6 +21,7 @@ const policePersonnelRoutes = require('./routes/policePersonnelRoutes.js');
 const incidentRoutes = require('./routes/incidentRoutes');
 const heatmapRoutes = require('./routes/heatmapRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const pushTokenRoutes = require('./routes/pushTokenRoutes');
 const notFound = require('./middleware/notFoundMiddleware');
 
 
@@ -32,6 +33,7 @@ const User = require('./models/userModel');
 const PolicePersonnel = require('./models/policePersonnelModel');
 const Incident = require('./models/incidentModel');
 const Notification = require('./models/notificationModel');
+const PushToken = require('./models/pushTokenModel');
 
 // ==================== EXPRESS & SERVER SETUP ====================
 const app = express();
@@ -136,7 +138,7 @@ app.use('/', policePersonnelRoutes);
 app.use('/', heatmapRoutes);
 app.use('/', userRoutes);
 app.use('/', notificationRoutes);
-
+app.use('/', pushTokenRoutes);
 // ==================== 404 HANDLER ====================
 app.use(notFound);
 

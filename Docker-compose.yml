@@ -51,7 +51,7 @@ services:
   # Golang Worker
   go-worker:
     build:
-      context: ../Pulse-guard-worker-golang
+      context: ./go-worker
       dockerfile: Dockerfile
     container_name: pulse-guard-media-worker
     ports:

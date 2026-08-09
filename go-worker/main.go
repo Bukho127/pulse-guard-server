@@ -33,6 +33,12 @@ func main() {
 
 	http.HandleFunc("/process-video", handleIncomingJob)
 
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"healthy"}`))
+	})
+
 	fmt.Println("Pulse Guard Go worker running on http://localhost:5002")
 	if err := http.ListenAndServe(":5002", nil); err != nil {
 		log.Fatalf("Server failed: %v", err)

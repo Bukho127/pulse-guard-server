@@ -6,6 +6,11 @@ const PolicePersonnel = require('./policePersonnelModel');
 const Incident = require('./incidentModel');
 const IncidentHistory = require('./incidentHistoryModel');
 const Notification = require('./notificationModel');
+const PushToken = require('./pushTokenModel');
+
+// User  PolicePersonnel
+User.hasMany(PolicePersonnel, { foreignKey: 'user_id' });
+PolicePersonnel.belongsTo(User, { foreignKey: 'user_id' });
 
 // User  Incident
 User.hasMany(Incident, { foreignKey: 'user_id' });
@@ -25,4 +30,8 @@ Notification.belongsTo(User, { foreignKey: 'user_id' });
 PolicePersonnel.hasMany(Notification, { foreignKey: 'security_personnel_id' });
 Notification.belongsTo(PolicePersonnel, { foreignKey: 'security_personnel_id' });
 
-module.exports = { User, PolicePersonnel, Incident, IncidentHistory, Notification };
+// PushToken  User
+PushToken.belongsTo(User, { foreignKey: "user_id", onDelete: "CASCADE" });
+User.hasMany(PushToken, { foreignKey: "user_id" });
+
+module.exports = { User, PolicePersonnel, Incident, IncidentHistory, Notification, PushToken };

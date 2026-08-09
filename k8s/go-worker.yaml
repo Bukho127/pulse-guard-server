@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-worker
+  template:
+    metadata:
+      labels:
+        app: go-worker
+    spec:
+      containers:
+      - name: go-worker
+        image: pulseguardacr220235236.azurecr.io/pulse-guard-go-worker:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5002
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-worker
+spec:
+  selector:
+    app: go-worker
+  ports:
+  - port: 5002
+    targetPort: 5002
+  type: ClusterIP

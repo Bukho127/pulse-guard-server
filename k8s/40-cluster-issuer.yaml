@@ -1,0 +1,17 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  # ClusterIssuers are cluster-scoped (no namespace field) — they can issue
+  # certificates for Ingresses in any namespace, so this works fine even
+  # though your app runs in "default"
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: bukho.mabula06@gmail.com   # <-- replace with your real email
+    privateKeySecretRef:
+      name: letsencrypt-prod-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx

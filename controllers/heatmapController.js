@@ -250,29 +250,91 @@ const getHeatmapByDateRange = async (req, res) => {
 const getOSRMRoute = async (req, res) => {
   try {
     const { startLng, startLat, endLng, endLat } = req.query;
-    console.log('OSRM route request:', { startLng, startLat, endLng, endLat });
+
+    console.log("========== OSRM ROUTE REQUEST ==========");
+    console.log({
+      startLng,
+      startLat,
+      endLng,
+      endLat
+    });
 
     if (!startLng || !startLat || !endLng || !endLat) {
-      return res.status(400).json({ error: 'startLng, startLat, endLng, endLat are required' });
+      return res.status(400).json({
+        error: "startLng, startLat, endLng and endLat are required"
+      });
     }
 
-    const url = `http://host.docker.internal:5000/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?geometries=geojson&overview=full`
-    console.log('Calling OSRM URL:', url);
+    const OSRM_BASE_URL =
+      process.env.OSRM_URL || "http://host.docker.internal:5000";
 
-    const response = await fetch(url);
-    console.log('OSRM response status:', response.status);
+    const url =
+      `${OSRM_BASE_URL}/route/v1/driving/` +
+      `${startLng},${startLat};${endLng},${endLat}` +
+      `?geometries=geojson&overview=full`;
 
-    const data = await response.json();
-    console.log('OSRM response data:', JSON.stringify(data));
+    console.log("OSRM_BASE_URL:", OSRM_BASE_URL);
+    console.log("OSRM URL:", url);
 
-    if (data.code !== 'Ok' || !data.routes?.length) {
-      return res.status(400).json({ error: `No route found: ${data.code}` });
+    const response = await fetch(url, {
+      headers: {
+        "ngrok-skip-browser-warning": "true",
+        "User-Agent": "PulseGuard/1.0",
+        "Accept": "application/json"
+      }
+    })
+    console.log("OSRM_BASE_URL:", OSRM_BASE_URL);
+    console.log("OSRM URL:", url);
+    console.log("Status:", response.status);
+    console.log("Content-Type:", response.headers.get("content-type"));
+    console.log(
+      "OSRM response content-type:",
+      response.headers.get("content-type")
+    );
+
+    const body = await response.text();
+
+    console.log("========== OSRM RAW RESPONSE ==========");
+    console.log(body.substring(0, 500));
+    console.log("=======================================");
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: `OSRM returned ${response.status}`,
+        url,
+        body: body.substring(0, 500)
+      });
     }
 
-    res.json(data.routes[0].geometry);
+    let data;
+
+    try {
+      data = JSON.parse(body);
+    } catch (err) {
+      return res.status(500).json({
+        error: "OSRM did not return valid JSON",
+        url,
+        body: body.substring(0, 500)
+      });
+    }
+
+    console.log("OSRM JSON:", JSON.stringify(data));
+
+    if (data.code !== "Ok" || !data.routes || data.routes.length === 0) {
+      return res.status(400).json({
+        error: `No route found: ${data.code}`,
+        data
+      });
+    }
+
+    return res.json(data.routes[0].geometry);
+
   } catch (err) {
-    console.error('OSRM controller error:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error("OSRM controller error:", err);
+
+    return res.status(500).json({
+      error: err.message
+    });
   }
 };
 
@@ -316,7 +378,7 @@ const getHeatmapByMonth = async (req, res) => {
       }
     });
   } catch (err) {
-     console.error('HEATMAP ERROR:', err.message)
+    console.error('HEATMAP ERROR:', err.message)
     res.status(500).json({ error: err.message });
   }
 };
