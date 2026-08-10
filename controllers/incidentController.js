@@ -279,6 +279,37 @@ const deleteIncident = async (req, res) => {
   }
 };
 
+const notificationService = require("../services/notificationService");
+
+// inside whatever function handles an officer acknowledging an incident:
+exports.acknowledgeIncident = async (req, res) => {
+  try {
+    const incident = await Incident.findByPk(req.params.incidentId);
+
+    if (!incident) {
+      return res.status(404).json({ error: "Incident not found" });
+    }
+
+    await incident.update({
+      status: "acknowledged",
+      acknowledged_at: new Date(),
+    });
+
+    // Trigger point: notify the user who originally reported it
+    await notificationService.sendNotification({
+      incidentId: incident.incident_id,
+      recipientType: "user",
+      recipientId: incident.user_id,
+      notificationType: "incident_acknowledged",
+    });
+
+    res.status(200).json({ success: true, incident });
+  } catch (error) {
+    console.error("Failed to acknowledge incident:", error);
+    res.status(500).json({ error: "Failed to acknowledge incident" });
+  }
+};
+
 // ─── EXPORTS ─────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -291,5 +322,5 @@ module.exports = {
   getMyIncidentById,
   getIncidentById,
   updateIncidentStatus,
-  deleteIncident
+  deleteIncident,
 };

@@ -138,7 +138,7 @@ app.use('/', policePersonnelRoutes);
 app.use('/', heatmapRoutes);
 app.use('/', userRoutes);
 app.use('/', notificationRoutes);
-app.use('/', pushTokenRoutes);
+app.use('/push-tokens', pushTokenRoutes);
 // ==================== 404 HANDLER ====================
 app.use(notFound);
 

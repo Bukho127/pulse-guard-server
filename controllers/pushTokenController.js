@@ -1,4 +1,4 @@
-const PushToken = require("../models/pushToken.model");
+const PushToken = require("../models/pushTokenModel");
 
 exports.saveToken = async (req, res) => {
   const { token: expoPushToken } = req.body;

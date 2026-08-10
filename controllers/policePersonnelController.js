@@ -74,6 +74,18 @@ const getAllPolicePersonnel = async (req, res) => {
   }
 };
 
+const getCurrentPersonnel = async (req, res) => {
+  try {
+    const personnel = await PolicePersonnel.findByPk(req.user.security_personnel_id);
+    if (!personnel) {
+      return res.status(404).json({ message: 'Personnel not found' });
+    }
+    res.json(personnel);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 const getPoliceById = async (req, res) => {
   try {
     const officer = await PolicePersonnel.findById(req.params.id);
@@ -129,6 +141,7 @@ module.exports = {
   addPolicePersonnel,
   loginPolicePersonnel,
   getAllPolicePersonnel,
+  getCurrentPersonnel,
   getPoliceById,
   updatePolicePersonnel,
   deletePolicePersonnel

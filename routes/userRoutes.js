@@ -6,6 +6,7 @@ const {
   getUserWithID,
   updateUser,
   deleteUser,
+  getCurrentUser
 } = require('../controllers/userControllers.js');
 const { 
   protect, 
@@ -21,7 +22,7 @@ router.post('/auth/login', loginUser);
 // Legacy user endpoints (optional)
 router.post('/users', addNewUser);
 router.post('/users/login', loginUser);
-
+router.get('/users/me', protect, getCurrentUser);
 router.get('/users', protect, authorizePersonnel, getUsers);
 router.get('/users/:userId', protect, getUserWithID);
 router.put('/users/:userId', protect, updateUser);
