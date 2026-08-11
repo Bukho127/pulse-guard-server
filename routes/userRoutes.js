@@ -2,6 +2,7 @@ const express = require('express');
 const {
   addNewUser,
   loginUser,
+  googleAuth,
   getUsers,
   getUserWithID,
   updateUser,
@@ -22,6 +23,7 @@ router.post('/auth/login', loginUser);
 // Legacy user endpoints (optional)
 router.post('/users', addNewUser);
 router.post('/users/login', loginUser);
+router.post('/auth/google', googleAuth);
 router.get('/users/me', protect, getCurrentUser);
 router.get('/users', protect, authorizePersonnel, getUsers);
 router.get('/users/:userId', protect, getUserWithID);

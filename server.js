@@ -26,7 +26,7 @@ const notFound = require('./middleware/notFoundMiddleware');
 
 
 // ==================== DATABASE ASSOCIATIONS ====================
-const associations = require('./models/associations'); // Ensure associations are defined before syncing the database
+const associations = require('./models/associations'); 
 
 // Models
 const User = require('./models/userModel');
@@ -89,11 +89,9 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-// ==================== MIDDLEWARE ====================
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 app.use(cors(corsOptions));
 app.use(express.json());
-
 
 // ==================== SOCKET.IO AUTHENTICATION ====================
 setIo(io);
@@ -139,8 +137,8 @@ app.use('/', heatmapRoutes);
 app.use('/', userRoutes);
 app.use('/', notificationRoutes);
 app.use('/push-tokens', pushTokenRoutes);
-// ==================== 404 HANDLER ====================
-app.use(notFound);
+
+app.use(notFound);//404 handler
 
 // ==================== DATABASE & SERVER START ====================
 connectDB().then(async (connected) => {

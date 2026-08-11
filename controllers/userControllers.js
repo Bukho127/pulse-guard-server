@@ -1,6 +1,9 @@
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 
 const canAccessUser = (req, userId) => (
   req.user?.role === 'personnel' || Number(req.user?.user_id) === Number(userId)
@@ -33,6 +36,38 @@ const loginUser = async (req, res) => {
     res.json({ token });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+// GOOGLE AUTH
+const googleAuth = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    if (!idToken) return res.status(400).json({ message: 'idToken is required' });
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_WEB_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name } = payload;
+
+    let user = await User.findOne({ where: { googleId } });
+
+    if (!user) {
+      user = await User.findOne({ where: { email } });
+
+      if (user) {
+        user.googleId = googleId;
+        await user.save();
+      } else {
+        user = await User.create({ name, email, googleId });
+      }
+    }
+
+    const token = jwt.sign({ user_id: user.user_id, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token });
+  } catch (err) {
+    res.status(401).json({ error: err.message });
   }
 };
 
@@ -125,6 +160,7 @@ const deleteUser = async (req, res) => {
 module.exports = {
   addNewUser,
   loginUser,
+  googleAuth,
   getUsers,
   getUserWithID,
   updateUser,

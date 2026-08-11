@@ -21,6 +21,11 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING(255),
         allowNull: false
     },
+    google_id: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+        unique: true
+    },
     createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW
@@ -41,16 +46,18 @@ const User = sequelize.define('User', {
 User.beforeCreate(async (user) => {
     if (user.password) {
         const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(user.password, salt); 
+        user.password = await bcrypt.hash(user.password, salt);
 
-    }});
+    }
+});
 
 User.beforeUpdate(async (user) => {
     if (user.password) {
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(user.password, salt);
 
-    }});
+    }
+});
 
 
 
