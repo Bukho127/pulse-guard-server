@@ -1,5 +1,8 @@
 const { DataTypes } = require('sequelize');
+const h3 = require('h3-js');
 const { sequelize } = require('../config/db');
+
+const H3_RESOLUTION = Number(process.env.MOBILE_H3_RESOLUTION || 10);
 
 const Incident = sequelize.define('Incident', {
   incident_id: {
@@ -31,6 +34,10 @@ const Incident = sequelize.define('Incident', {
     type: DataTypes.STRING(255),
     allowNull: true
   },
+  h3_index: {
+    type: DataTypes.STRING(15),
+    allowNull: true
+  },
   status: {
     type: DataTypes.ENUM('pending', 'acknowledged', 'dismissed'),
     defaultValue: 'pending',
@@ -50,7 +57,17 @@ const Incident = sequelize.define('Incident', {
   }
 }, {
   tableName: 'incidents',
-  timestamps: false
+  timestamps: false,
+  hooks: {
+    beforeSave: (incident) => {
+      const latitude = Number(incident.latitude);
+      const longitude = Number(incident.longitude);
+
+      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+        incident.h3_index = h3.latLngToCell(latitude, longitude, H3_RESOLUTION);
+      }
+    }
+  }
 });
 
 module.exports = Incident;

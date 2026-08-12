@@ -23,6 +23,7 @@ const heatmapRoutes = require('./routes/heatmapRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const pushTokenRoutes = require('./routes/pushTokenRoutes');
 const notFound = require('./middleware/notFoundMiddleware');
+const { registerMobileCrimeAnalyticsSocket } = require('./controllers/mobileCrimeAnalyticsController');
 
 
 // ==================== DATABASE ASSOCIATIONS ====================
@@ -128,6 +129,8 @@ io.on('connection', (socket) => {
       socket.join(`user:${userId}`);
     }
   }
+
+  registerMobileCrimeAnalyticsSocket(socket);
 });
 
 // ==================== ROUTES ====================
