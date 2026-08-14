@@ -10,9 +10,6 @@ const { emitNotificationToRecipient } = require('./socketService');
 
 const expo = new Expo();
 
-// Generic, non-sensitive copy shown in the push banner itself. The real
-// (decrypted) message is only ever available in-app, over the socket
-// channel or your authenticated API — never in the push payload itself.
 const NOTIFICATION_COPY = {
   general: {
     title: 'Pulse Guard',
@@ -69,10 +66,6 @@ const serializeNotification = (notification) => {
   };
 };
 
-// Resolves device tokens for a recipient and sends via Expo. Never throws —
-// a push delivery failure should not break the in-app / socket flow, which
-// is why this is isolated and always resolves the notification row status
-// itself rather than letting an error propagate up to createNotification.
 const dispatchPush = async (notification, recipient, notificationType, incidentId) => {
   const tokens =
     recipient.recipient_type === 'user'
@@ -80,9 +73,9 @@ const dispatchPush = async (notification, recipient, notificationType, incidentI
       : await PushToken.getTokensForPersonnel(recipient.recipientId);
 
   if (tokens.length === 0) {
-    // No registered devices — leave status as-is (still 'sent' from the
-    // socket/DB perspective; there's just nothing to push to).
     return;
+    // No tokens available for push notification so we don't attempt to send a push notification. 
+    // The notification will still be stored in the database for later retrieval.
   }
 
   const validTokens = tokens.filter(Expo.isExpoPushToken);
@@ -153,10 +146,6 @@ const createNotification = async ({
     notification: serializedNotification
   });
 
-  // Push delivery for anyone who doesn't have the app open. Runs after
-  // the socket emit and never blocks/throws past this point — a push
-  // failure shouldn't undo the fact that the notification was created
-  // and already delivered in-app to anyone currently connected.
   try {
     await dispatchPush(notification, recipient, notification_type, incident_id);
   } catch (error) {
