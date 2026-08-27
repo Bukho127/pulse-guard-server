@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Pulse Guard** is a community-driven video crime reporting platform designed to improve public safety across Cape Town townships. Rather than remaining passive bystanders, community members can actively contribute to public safety by capturing and submitting video evidence of criminal incidents.
+**Pulse Guard** is a community-driven video crime reporting platform designed to improve public safety across Cape Town townships by letting users report crime through a video. Rather than remaining passive bystanders, community members can actively contribute to public safety by capturing and submitting video evidence of criminal incidents.
 
 The platform's primary objective is to provide emergency responders and law enforcement with **real-time situational awareness**. Access to visual evidence from the scene enables responders to assess incidents more accurately, prioritise resources, and make informed decisions before arriving on site.
 
