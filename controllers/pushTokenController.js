@@ -7,9 +7,13 @@ exports.saveToken = async (req, res) => {
     return res.status(400).json({ error: "expoPushToken is required" });
   }
 
+  const isPersonnel = req.user.role === "personnel";
+
   try {
     await PushToken.upsert({
-      user_id: req.user.id,
+      user_id: isPersonnel ? null : req.user.user_id,
+      security_personnel_id: isPersonnel ? req.user.security_personnel_id : null,
+      recipient_type: isPersonnel ? "personnel" : "user",
       expoPushToken,
     });
     res.status(200).json({ success: true });

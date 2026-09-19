@@ -39,6 +39,8 @@ services:
 
       # Go Worker
       GO_SERVICE_URL: http://go-worker:5002
+    volumes:
+      - shared-uploads:/app/uploads   # ← added
     depends_on:
       valkey:
         condition: service_healthy
@@ -58,12 +60,15 @@ services:
       - "5002:5002"
     env_file:
       - ../Pulse-guard-worker-golang/.env
+    volumes:
+      - shared-uploads:/app/uploads   # ← added
     restart: unless-stopped
     networks:
       - pulse-guard-network
 
 volumes:
   valkey-data:
+  shared-uploads:   # ← added
 
 networks:
   pulse-guard-network:

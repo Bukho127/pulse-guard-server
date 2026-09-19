@@ -67,10 +67,10 @@ const serializeNotification = (notification) => {
 };
 
 const dispatchPush = async (notification, recipient, notificationType, incidentId) => {
-  const tokens =
-    recipient.recipient_type === 'user'
-      ? await PushToken.getTokensForUser(recipient.recipientId)
-      : await PushToken.getTokensForPersonnel(recipient.recipientId);
+  const tokens = await PushToken.getTokensForUser(
+    recipient.recipient_type,
+    recipient.recipientId
+  );
 
   if (tokens.length === 0) {
     return;

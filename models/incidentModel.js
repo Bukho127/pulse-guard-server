@@ -4,6 +4,15 @@ const { sequelize } = require('../config/db');
 
 const H3_RESOLUTION = Number(process.env.MOBILE_H3_RESOLUTION || 10);
 
+function computeH3Index(incident) {
+  const latitude = Number(incident.latitude);
+  const longitude = Number(incident.longitude);
+
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    incident.h3_index = h3.latLngToCell(latitude, longitude, H3_RESOLUTION);
+  }
+}
+
 const Incident = sequelize.define('Incident', {
   incident_id: {
     type: DataTypes.INTEGER,
@@ -59,14 +68,8 @@ const Incident = sequelize.define('Incident', {
   tableName: 'incidents',
   timestamps: false,
   hooks: {
-    beforeSave: (incident) => {
-      const latitude = Number(incident.latitude);
-      const longitude = Number(incident.longitude);
-
-      if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-        incident.h3_index = h3.latLngToCell(latitude, longitude, H3_RESOLUTION);
-      }
-    }
+    beforeCreate: computeH3Index,
+    beforeUpdate: computeH3Index
   }
 });
 
