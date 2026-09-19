@@ -1,16 +1,4 @@
 apiVersion: v1
-kind: Secret
-metadata:
-  name: mysql-secret
-type: Opaque
-stringData:
-  MYSQL_ROOT_PASSWORD: password
-  MYSQL_DATABASE: pulseguard
-  MYSQL_USER: pulseguard
-  MYSQL_PASSWORD: password
-
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mysql-pvc

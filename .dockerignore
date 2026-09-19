@@ -2,7 +2,14 @@ node_modules
 npm-debug.log
 .git
 .gitignore
+.env
+.env.*
 .env.local
+env/
+secrets/
+k8s/secrets/
+*secret*.yaml
+*secret*.yml
 .DS_Store
 .next
 .vercel

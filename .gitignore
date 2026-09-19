@@ -1,9 +1,18 @@
 # Environment variables
 .env
+.env.*
 .env.local
 .env.development
 .env.production
 env/.env
+go-worker/.env
+go-worker/.env.*
+
+# Generated Kubernetes secrets
+*secret*.yaml
+*secret*.yml
+k8s/secrets/
+secrets/
 
 # Dependencies
 node_modules/
@@ -23,7 +32,8 @@ build/
 
 # Editor
 .vscode/
-.idea/go-worker/.env 
-go-worker/*.exe 
-go-worker/main.exe 
-go-worker/cd 
+.idea/
+
+# Local Go worker build output
+go-worker/*.exe
+go-worker/cd

@@ -72,8 +72,12 @@ func PingExpressWebhook(incidentID int, videoURL string) {
 	}
 	jsonPayload, _ := json.Marshal(payload)
 
-	//Fires the POST request directly to the 'app' container over the Docker network
-	url := "http://app:5001/internal/video-complete"
+	backendURL := os.Getenv("BACKEND_URL")
+	if backendURL == "" {
+		backendURL = "http://app:5001"
+	}
+
+	url := strings.TrimRight(backendURL, "/") + "/internal/video-complete"
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonPayload))
 	if err != nil {

@@ -20,6 +20,24 @@ spec:
         ports:
         - containerPort: 5001
 
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5001
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5001
+          initialDelaySeconds: 15
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 3
+
         envFrom:
         - secretRef:
             name: pulse-guard-secret
@@ -31,6 +49,15 @@ spec:
           value: "6379"
         - name: GO_SERVICE_URL
           value: "http://go-worker:5002"
+
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: uploads-pvc
 
 ---
 apiVersion: v1

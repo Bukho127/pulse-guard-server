@@ -19,6 +19,41 @@ spec:
         ports:
         - containerPort: 5002
 
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5002
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5002
+          initialDelaySeconds: 15
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        envFrom:
+        - secretRef:
+            name: pulse-guard-secret
+
+        env:
+        - name: BACKEND_URL
+          value: "http://pulse-guard-backend:5001"
+
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: uploads-pvc
+
 ---
 apiVersion: v1
 kind: Service
