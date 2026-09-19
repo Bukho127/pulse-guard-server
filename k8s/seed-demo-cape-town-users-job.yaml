@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed-demo-cape-town-users
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: seed-demo-cape-town-users
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: seed-demo-cape-town-users
+        image: pulseguardacr220235236.azurecr.io/pulse-guard-backend:latest
+        imagePullPolicy: Always
+        command: ["npm", "run", "seed:demo-cape-town-users"]
+        envFrom:
+        - secretRef:
+            name: pulse-guard-secret
