@@ -10,7 +10,9 @@ go-worker/.env.*
 
 # Generated Kubernetes secrets
 *secret*.yaml
+!*secret*.example.yaml
 *secret*.yml
+!*secret*.example.yml
 k8s/secrets/
 secrets/
 

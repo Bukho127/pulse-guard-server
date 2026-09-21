@@ -64,15 +64,59 @@ function Require-Value {
     return $Values[$Name]
 }
 
-function Add-LiteralArg {
+function ConvertTo-Base64SecretValue {
     param(
-        [System.Collections.Generic.List[string]]$Args,
-        [string]$Name,
         [string]$Value
     )
 
-    if (-not [string]::IsNullOrWhiteSpace($Value)) {
-        $Args.Add("--from-literal=$Name=$Value")
+    return [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($Value))
+}
+
+function Write-SecretYaml {
+    param(
+        [string]$Name,
+        [string]$Namespace,
+        [hashtable]$Values,
+        [string]$Path
+    )
+
+    $lines = [System.Collections.Generic.List[string]]::new()
+    $lines.Add("apiVersion: v1")
+    $lines.Add("kind: Secret")
+    $lines.Add("metadata:")
+    $lines.Add("  name: $Name")
+    $lines.Add("  namespace: $Namespace")
+    $lines.Add("type: Opaque")
+    $lines.Add("data:")
+
+    foreach ($key in ($Values.Keys | Sort-Object)) {
+        $encodedValue = ConvertTo-Base64SecretValue -Value ([string]$Values[$key])
+        $lines.Add("  ${key}: $encodedValue")
+    }
+
+    [System.IO.File]::WriteAllLines($Path, $lines, [System.Text.UTF8Encoding]::new($false))
+}
+
+function Apply-Secret {
+    param(
+        [string]$Name,
+        [string]$Namespace,
+        [hashtable]$Values
+    )
+
+    $tempFile = Join-Path ([System.IO.Path]::GetTempPath()) "$Name.yaml"
+
+    try {
+        Write-SecretYaml -Name $Name -Namespace $Namespace -Values $Values -Path $tempFile
+        & kubectl apply -f $tempFile
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "kubectl failed while applying $Name"
+        }
+    } finally {
+        if (Test-Path -LiteralPath $tempFile) {
+            Remove-Item -LiteralPath $tempFile -Force
+        }
     }
 }
 
@@ -96,50 +140,42 @@ $notificationEncryptionKey = Require-Value -Values $envValues -Name "NOTIFICATIO
 $googleWebClientId = Require-Value -Values $envValues -Name "GOOGLE_WEB_CLIENT_ID"
 $mapboxAccessToken = Require-Value -Values $envValues -Name "MAPBOX_ACCESS_TOKEN"
 
-$mysqlSecretArgs = [System.Collections.Generic.List[string]]::new()
-$mysqlSecretArgs.AddRange(@(
-    "create", "secret", "generic", "mysql-secret",
-    "--namespace", $Namespace,
-    "--from-literal=MYSQL_ROOT_PASSWORD=$MysqlRootPassword",
-    "--from-literal=MYSQL_DATABASE=$DbName",
-    "--from-literal=MYSQL_USER=$DbUser",
-    "--from-literal=MYSQL_PASSWORD=$DbPassword",
-    "--dry-run=client",
-    "-o", "yaml"
-))
+$mysqlSecretValues = @{
+    MYSQL_ROOT_PASSWORD = $MysqlRootPassword
+    MYSQL_DATABASE = $DbName
+    MYSQL_USER = $DbUser
+    MYSQL_PASSWORD = $DbPassword
+}
 
-$pulseGuardSecretArgs = [System.Collections.Generic.List[string]]::new()
-$pulseGuardSecretArgs.AddRange(@(
-    "create", "secret", "generic", "pulse-guard-secret",
-    "--namespace", $Namespace,
-    "--from-literal=DB_HOST=mysql",
-    "--from-literal=DB_PORT=3306",
-    "--from-literal=DB_NAME=$DbName",
-    "--from-literal=DB_USER=$DbUser",
-    "--from-literal=DB_PASSWORD=$DbPassword",
-    "--from-literal=JWT_SECRET=$jwtSecret",
-    "--from-literal=AZURE_STORAGE_CONNECTION_STRING=$azureStorageConnectionString",
-    "--from-literal=NOTIFICATION_ENCRYPTION_KEY=$notificationEncryptionKey",
-    "--from-literal=GOOGLE_WEB_CLIENT_ID=$googleWebClientId",
-    "--from-literal=MAPBOX_ACCESS_TOKEN=$mapboxAccessToken",
-    "--from-literal=NOTIFICATION_QUEUE_DRIVER=bull",
-    "--from-literal=REDIS_HOST=valkey",
-    "--from-literal=REDIS_PORT=6379",
-    "--from-literal=NOTIFICATION_QUEUE_ATTEMPTS=3",
-    "--from-literal=NOTIFICATION_QUEUE_BACKOFF_MS=5000",
-    "--from-literal=NOTIFICATION_QUEUE_CONCURRENCY=1",
-    "--from-literal=SEED_PERSONNEL_PASSWORD=$SeedPersonnelPassword",
-    "--from-literal=DEMO_USER_PASSWORD=$DemoUserPassword",
-    "--dry-run=client",
-    "-o", "yaml"
-))
+$pulseGuardSecretValues = @{
+    DB_HOST = "mysql"
+    DB_PORT = "3306"
+    DB_NAME = $DbName
+    DB_USER = $DbUser
+    DB_PASSWORD = $DbPassword
+    JWT_SECRET = $jwtSecret
+    AZURE_STORAGE_CONNECTION_STRING = $azureStorageConnectionString
+    NOTIFICATION_ENCRYPTION_KEY = $notificationEncryptionKey
+    GOOGLE_WEB_CLIENT_ID = $googleWebClientId
+    MAPBOX_ACCESS_TOKEN = $mapboxAccessToken
+    NOTIFICATION_QUEUE_DRIVER = "bull"
+    REDIS_HOST = "valkey"
+    REDIS_PORT = "6379"
+    NOTIFICATION_QUEUE_ATTEMPTS = "3"
+    NOTIFICATION_QUEUE_BACKOFF_MS = "5000"
+    NOTIFICATION_QUEUE_CONCURRENCY = "1"
+    SEED_PERSONNEL_PASSWORD = $SeedPersonnelPassword
+    DEMO_USER_PASSWORD = $DemoUserPassword
+}
 
-Add-LiteralArg -Args $pulseGuardSecretArgs -Name "ALLOWED_ORIGINS" -Value $AllowedOrigins
+if (-not [string]::IsNullOrWhiteSpace($AllowedOrigins)) {
+    $pulseGuardSecretValues["ALLOWED_ORIGINS"] = $AllowedOrigins
+}
 
 Write-Host "Creating/updating mysql-secret in namespace '$Namespace'..."
-& kubectl @mysqlSecretArgs | kubectl apply -f -
+Apply-Secret -Name "mysql-secret" -Namespace $Namespace -Values $mysqlSecretValues
 
 Write-Host "Creating/updating pulse-guard-secret in namespace '$Namespace'..."
-& kubectl @pulseGuardSecretArgs | kubectl apply -f -
+Apply-Secret -Name "pulse-guard-secret" -Namespace $Namespace -Values $pulseGuardSecretValues
 
 Write-Host "Kubernetes secrets are ready."

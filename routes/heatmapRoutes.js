@@ -15,15 +15,15 @@ const router = express.Router();
 
 // Get all heatmap data (general)
 // Usage: GET /heatmap
-router.get('/heatmap', protect, authorizePersonnel, getHeatmapData);
+router.get('/heatmap', protect, getHeatmapData);
 
 // Get heatmap by date range
 // Usage: GET /heatmap/range?startDate=2026-01-01&endDate=2026-06-30
-router.get('/heatmap/range', protect, authorizePersonnel, getHeatmapByDateRange);
+router.get('/heatmap/range', protect, getHeatmapByDateRange);
 
 // Get heatmap by month (most specific)
 // Usage: GET /heatmap/month?month=2026-06
-router.get('/heatmap/month', protect, authorizePersonnel, getHeatmapByMonth);
+router.get('/heatmap/month', protect, getHeatmapByMonth);
 
 // Get OSRM route
 // Usage: GET /heatmap/route?startLng=18.4232&startLat=-33.9249&endLng=18.4241&endLat=-33.9258
