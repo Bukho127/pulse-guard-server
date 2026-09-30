@@ -2,6 +2,7 @@ const h3 = require('h3-js');
 const Incident = require('../models/incidentModel');
 
 const H3_RESOLUTION = Number(process.env.MOBILE_H3_RESOLUTION || 10);
+const H3_SEARCH_RADIUS = Number(process.env.MOBILE_H3_SEARCH_RADIUS || 3);
 const MODERATE_RISK_MIN = Number(process.env.MOBILE_MODERATE_RISK_MIN || 5);
 const CRITICAL_RISK_MIN = Number(process.env.MOBILE_CRITICAL_RISK_MIN || 15);
 
@@ -40,6 +41,10 @@ const assertValidUserH3Index = (h3Index) => {
 };
 
 const getIncidentH3Index = (incident) => {
+  if (incident.h3_index && h3.isValidCell(incident.h3_index)) {
+    return incident.h3_index;
+  }
+
   const latitude = Number(incident.latitude);
   const longitude = Number(incident.longitude);
 
@@ -48,6 +53,18 @@ const getIncidentH3Index = (incident) => {
   }
 
   return h3.latLngToCell(latitude, longitude, H3_RESOLUTION);
+};
+
+const serializeDate = (value) => {
+  if (!value) {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  return String(value);
 };
 
 const buildLocalCrimePoints = (incidents) => {
@@ -76,6 +93,17 @@ const buildLocalCrimePoints = (incidents) => {
   return Array.from(pointsByCoordinate.values());
 };
 
+const buildIncidentHotspots = (incidents) => {
+  return incidents.map((incident) => ({
+    incident_id: incident.incident_id,
+    latitude: Number(incident.latitude),
+    longitude: Number(incident.longitude),
+    status: incident.status,
+    created_at: serializeDate(incident.created_at),
+    h3Index: getIncidentH3Index(incident)
+  }));
+};
+
 const buildCellCounts = (incidents) => {
   const countsByCell = new Map();
 
@@ -98,20 +126,18 @@ const buildCellCounts = (incidents) => {
 const getMobileCrimeAnalytics = async (h3Index) => {
   assertValidUserH3Index(h3Index);
 
-  const searchedCells = h3.gridDisk(h3Index, 1);
-  const searchedCellSet = new Set(searchedCells);
+  const searchedCells = h3.gridDisk(h3Index, H3_SEARCH_RADIUS);
 
   const incidents = await Incident.findAll({
-    attributes: ['incident_id', 'latitude', 'longitude', 'status', 'created_at'],
+    attributes: ['incident_id', 'latitude', 'longitude', 'status', 'created_at', 'h3_index'],
     where: {
-      status: 'acknowledged'
+      status: 'acknowledged',
+      h3_index: {
+        $in: searchedCells
+      }
     }
   });
-
-  const localIncidents = incidents.filter((incident) => {
-    const incidentH3Index = getIncidentH3Index(incident);
-    return incidentH3Index && searchedCellSet.has(incidentH3Index);
-  });
+  const localIncidents = incidents;
 
   const totalIncidentCount = localIncidents.length;
 
@@ -119,11 +145,13 @@ const getMobileCrimeAnalytics = async (h3Index) => {
     type: 'mobile-crime-analytics',
     h3Index,
     resolution: H3_RESOLUTION,
+    searchRadius: H3_SEARCH_RADIUS,
     searchedCells,
     totalIncidentCount,
     riskRank: getRiskRank(totalIncidentCount),
     localCrimePoints: buildLocalCrimePoints(localIncidents),
-    cellCounts: buildCellCounts(localIncidents)
+    cellCounts: buildCellCounts(localIncidents),
+    hotspots: buildIncidentHotspots(localIncidents)
   };
 };
 

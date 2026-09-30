@@ -67,6 +67,16 @@ const Incident = sequelize.define('Incident', {
 }, {
   tableName: 'incidents',
   timestamps: false,
+  indexes: [
+    {
+      name: 'idx_incidents_status_h3_index',
+      fields: ['status', 'h3_index']
+    },
+    {
+      name: 'idx_incidents_status_created_at',
+      fields: ['status', 'created_at']
+    }
+  ],
   hooks: {
     beforeCreate: computeH3Index,
     beforeUpdate: computeH3Index

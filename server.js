@@ -42,29 +42,21 @@ const app = express();
 const server = http.createServer(app);
 
 // ==================== CORS CONFIGURATION ====================
-const allowedOrigins = process.env.ALLOWED_ORIGINS
+const localDevOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:8081",
+  "http://localhost:19006"
+];
+
+const configuredOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-  : [
-      "http://localhost:3000",
-      "http://localhost:5173"
-    ];
+  : [];
 
-
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"],
-    credentials: false
-  }
-});
-
-// ==================== HEALTH CHECK ====================
-app.get("/health", (req, res) => {
-    res.status(200).json({
-        status: "healthy"
-    });
-});
-
+const allowedOrigins = Array.from(new Set([
+  ...configuredOrigins,
+  ...localDevOrigins
+]));
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -87,12 +79,29 @@ const corsOptions = {
     'Accept', 
     'Origin', 
     'X-Requested-With'],
-  credentials: false,
+  credentials: true,
   optionsSuccessStatus: 204,
 };
 
-app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
+
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
 app.use(cors(corsOptions));
+
+// ==================== HEALTH CHECK ====================
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "healthy"
+    });
+});
+
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 app.use(express.json());
 
 // ==================== SOCKET.IO AUTHENTICATION ====================
