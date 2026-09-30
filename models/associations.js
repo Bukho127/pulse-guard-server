@@ -7,6 +7,7 @@ const Incident = require('./incidentModel');
 const IncidentHistory = require('./incidentHistoryModel');
 const Notification = require('./notificationModel');
 const PushToken = require('./pushTokenModel');
+const EmailVerificationOtp = require('./emailVerificationOtpModel');
 
 // User  PolicePersonnel
 User.hasMany(PolicePersonnel, { foreignKey: 'user_id' });
@@ -34,4 +35,8 @@ Notification.belongsTo(PolicePersonnel, { foreignKey: 'security_personnel_id' })
 PushToken.belongsTo(User, { foreignKey: "user_id", onDelete: "CASCADE" });
 User.hasMany(PushToken, { foreignKey: "user_id" });
 
-module.exports = { User, PolicePersonnel, Incident, IncidentHistory, Notification, PushToken };
+// User  EmailVerificationOtp
+User.hasMany(EmailVerificationOtp, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+EmailVerificationOtp.belongsTo(User, { foreignKey: 'user_id' });
+
+module.exports = { User, PolicePersonnel, Incident, IncidentHistory, Notification, PushToken, EmailVerificationOtp };

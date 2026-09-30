@@ -168,6 +168,22 @@ $pulseGuardSecretValues = @{
     DEMO_USER_PASSWORD = $DemoUserPassword
 }
 
+@(
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "SMTP_SECURE",
+    "SMTP_USER",
+    "SMTP_PASS",
+    "EMAIL_FROM",
+    "EMAIL_TIME_ZONE",
+    "EMAIL_OTP_EXPIRY_MINUTES",
+    "EMAIL_OTP_MAX_ATTEMPTS"
+) | ForEach-Object {
+    if ($envValues.ContainsKey($_) -and -not [string]::IsNullOrWhiteSpace($envValues[$_])) {
+        $pulseGuardSecretValues[$_] = $envValues[$_]
+    }
+}
+
 if (-not [string]::IsNullOrWhiteSpace($AllowedOrigins)) {
     $pulseGuardSecretValues["ALLOWED_ORIGINS"] = $AllowedOrigins
 }

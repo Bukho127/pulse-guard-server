@@ -15,11 +15,19 @@ const User = sequelize.define('User', {
     email: {
         type: DataTypes.STRING(150),
         allowNull: false,
-        unique: true
+        unique: true,
+        set(value) {
+            this.setDataValue('email', String(value || '').trim().toLowerCase());
+        }
     },
     password: {
         type: DataTypes.STRING(255),
-        allowNull: false
+        allowNull: true
+    },
+    email_verified: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
     },
     googleId: {
         type: DataTypes.STRING(255),

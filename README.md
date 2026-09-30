@@ -45,6 +45,24 @@ Its responsibilities include:
 
 ---
 
+## Email verification
+
+Community user registration sends a 6-digit email OTP and does not issue a login JWT until the email is verified. Configure SMTP delivery with these optional environment variables:
+
+* `SMTP_HOST`
+* `SMTP_PORT` (defaults to `587`)
+* `SMTP_SECURE` (`true` for SMTPS, or automatically true on port `465`)
+* `SMTP_USER`
+* `SMTP_PASS`
+* `EMAIL_FROM`
+* `EMAIL_TIME_ZONE` (defaults to `Africa/Johannesburg`)
+* `EMAIL_OTP_EXPIRY_MINUTES` (defaults to `10`)
+* `EMAIL_OTP_MAX_ATTEMPTS` (defaults to `5`)
+
+If `SMTP_HOST` is not configured, the backend logs the verification code for local development.
+
+---
+
 # Video Processing Pipeline (Go)
 
 Video processing is isolated into a dedicated microservice written in **Go**.

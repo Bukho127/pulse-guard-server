@@ -11,6 +11,7 @@ require('dotenv').config();
 const { setIo } = require('./services/socketService');
 const swaggerDocument = YAML.load(fs.readFileSync('docs/swagger.yaml', 'utf8'));
 const { startIncidentNotificationWorker } = require('./services/incidentNotificationQueue');
+const { ensureAuthSchema } = require('./services/authSchemaService');
 
 const PORT = process.env.PORT || 5001;
 
@@ -147,6 +148,7 @@ app.use(notFound);//404 handler
 connectDB().then(async (connected) => {
   if (connected) {
     try {
+      await ensureAuthSchema();
       await sequelize.sync();
       console.log('Database synced successfully');
       startIncidentNotificationWorker();

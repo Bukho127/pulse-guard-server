@@ -33,11 +33,11 @@ paths:
               $ref: '#/components/schemas/UserCreate'
       responses:
         '200':
-          description: User created
+          description: Verification code sent
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/RegisterVerificationResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -65,6 +65,58 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/verify-email:
+    post:
+      tags: [Auth]
+      summary: Verify a community user's email address
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerifyRequest'
+      responses:
+        '200':
+          description: Email verified and login token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailVerifyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /auth/resend-verification:
+    post:
+      tags: [Auth]
+      summary: Resend a community user's email verification code
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailResendRequest'
+      responses:
+        '200':
+          description: Verification resend result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -848,6 +900,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MessageResponse'
 
   schemas:
     AuthToken:
@@ -856,6 +914,58 @@ components:
         token:
           type: string
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    RegisterVerificationResponse:
+      type: object
+      properties:
+        requiresEmailVerification:
+          type: boolean
+          example: true
+        email:
+          type: string
+          format: email
+          example: amina@example.com
+        message:
+          type: string
+          example: Verification code sent to your email.
+
+    EmailVerifyRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          example: amina@example.com
+        otp:
+          type: string
+          pattern: '^[0-9]{6}$'
+          example: '123456'
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+          example: '123456'
+
+    EmailResendRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          example: amina@example.com
+
+    EmailVerifyResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: '#/components/schemas/User'
+        message:
+          type: string
+          example: Email verified successfully.
 
     MessageResponse:
       type: object
@@ -937,6 +1047,9 @@ components:
           type: string
           format: email
           example: amina@example.com
+        email_verified:
+          type: boolean
+          example: true
         createdAt:
           type: string
           format: date-time
