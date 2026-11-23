@@ -9,6 +9,7 @@ const { createNotification } = require('../services/notificationService');
 const { resolveLocation } = require('../services/locationResolver');
 const { queueIncidentPersonnelNotifications } = require('../services/incidentNotificationQueue');
 const { getIo } = require('../services/socketService');
+const { signIncidentVideoUrls, signVideoUrl } = require('../services/blobServices');
 
 const GO_SERVICE_URL = process.env.GO_SERVICE_URL || 'http://go-worker:5002';
 
@@ -145,7 +146,7 @@ const getIncidents = async (req, res) => {
 
     if (!hasPage && !hasLimit) {
       const incidents = await Incident.findAll(getAllIncidentsQuery());
-      return res.json({ data: incidents });
+      return res.json({ data: signIncidentVideoUrls(incidents) });
     }
 
     let page = Math.max(1, parseInt(req.query.page, 10));
@@ -162,7 +163,7 @@ const getIncidents = async (req, res) => {
       offset: (page - 1) * limit
     });
 
-    res.json({ data: rows, pagination: buildPagination(page, limit, count) });
+    res.json({ data: signIncidentVideoUrls(rows), pagination: buildPagination(page, limit, count) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -171,7 +172,7 @@ const getIncidents = async (req, res) => {
 const getAllIncidents = async (req, res) => {
   try {
     const incidents = await Incident.findAll(getAllIncidentsQuery());
-    res.json({ data: incidents });
+    res.json({ data: signIncidentVideoUrls(incidents) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -189,7 +190,7 @@ const getMyIncidents = async (req, res) => {
       offset: (page - 1) * limit
     });
 
-    res.json({ data: rows, pagination: buildPagination(page, limit, count) });
+    res.json({ data: signIncidentVideoUrls(rows), pagination: buildPagination(page, limit, count) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -202,7 +203,7 @@ const getMyIncidentById = async (req, res) => {
     });
 
     if (!incident) return res.status(404).json({ message: 'Incident not found' });
-    res.json(incident);
+    res.json({ ...incident.toJSON(), video_url: signVideoUrl(incident.video_url) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -215,7 +216,7 @@ const getIncidentById = async (req, res) => {
     });
 
     if (!incident) return res.status(404).json({ message: 'Incident not found' });
-    res.json(incident);
+    res.json({ ...incident.toJSON(), video_url: signVideoUrl(incident.video_url) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -257,7 +258,7 @@ const updateIncidentStatus = async (req, res) => {
       }
     }
 
-    res.json(updatedIncident);
+    res.json({ ...updatedIncident.toJSON(), video_url: signVideoUrl(updatedIncident.video_url) });
   } catch (err) {
     console.error('[updateIncidentStatus] Error:', err.message);
     res.status(500).json({ error: err.message });

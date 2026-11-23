@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: go-worker
-        image: pulseguardacr220235236.azurecr.io/pulse-guard-go-worker:latest
+        image: pulseguardbukho20261104.azurecr.io/pulse-guard-go-worker:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5002

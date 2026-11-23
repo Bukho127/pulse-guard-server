@@ -1,6 +1,11 @@
 .env
 .env.*
+!.env.example
 *.exe
 Dockerfile
 .git
+.github
 .gitignore
+*.log
+tmp/
+testdata/

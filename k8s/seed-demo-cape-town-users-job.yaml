@@ -12,7 +12,7 @@ spec:
       restartPolicy: OnFailure
       containers:
       - name: seed-demo-cape-town-users
-        image: pulseguardacr220235236.azurecr.io/pulse-guard-backend:latest
+        image: pulseguardbukho20261104.azurecr.io/pulse-guard-backend:latest
         imagePullPolicy: Always
         command: ["npm", "run", "seed:demo-cape-town-users"]
         envFrom:

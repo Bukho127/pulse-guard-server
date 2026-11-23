@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: osrm
-        image: pulseguardacr220235236.azurecr.io/osrm-capetown:latest
+        image: pulseguardbukho20261104.azurecr.io/osrm-capetown:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5000

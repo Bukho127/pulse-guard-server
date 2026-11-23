@@ -9,13 +9,13 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
 spec:
-  ingressClassName: nginx
+  ingressClassName: webapprouting.kubernetes.azure.com
   tls:
     - hosts:
-        - pulseguard-api.southafricanorth.cloudapp.azure.com
+        - pulseguard-bukho-20261104.southafricanorth.cloudapp.azure.com
       secretName: pulse-guard-backend-tls
   rules:
-    - host: pulseguard-api.southafricanorth.cloudapp.azure.com
+    - host: pulseguard-bukho-20261104.southafricanorth.cloudapp.azure.com
       http:
         paths:
           - path: /

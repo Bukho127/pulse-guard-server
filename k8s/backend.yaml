@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: pulse-guard-backend
-        image: pulseguardacr220235236.azurecr.io/pulse-guard-backend:latest
+        image: pulseguardbukho20261104.azurecr.io/pulse-guard-backend:latest
         imagePullPolicy: Always
 
         ports:
@@ -49,6 +49,8 @@ spec:
           value: "6379"
         - name: GO_SERVICE_URL
           value: "http://go-worker:5002"
+        - name: OSRM_URL
+          value: "http://osrm:5000"
 
         volumeMounts:
         - name: uploads
@@ -70,4 +72,4 @@ spec:
   ports:
   - port: 5001
     targetPort: 5001
-  type: LoadBalancer
+  type: ClusterIP

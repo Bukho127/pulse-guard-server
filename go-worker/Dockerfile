@@ -7,11 +7,11 @@ RUN apk add --no-cache git
 WORKDIR /app
 
 # Copy dependency files first for caching optimization
-COPY go.mod go.sum ./
+COPY go-worker/go.mod go-worker/go.sum ./
 RUN go mod download
 
 # Copy the rest of the application files (including media/)
-COPY . .
+COPY go-worker/ .
 
 # Build a highly optimized, static binary
 RUN CGO_ENABLED=0 GOOS=linux go build -o /pulse-guard-worker .
