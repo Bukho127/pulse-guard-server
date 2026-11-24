@@ -9,8 +9,13 @@ const protect = (req, res, next) => {
 
   if (!token) return res.status(401).json({ message: 'Access token required' });
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ message: 'Invalid or expired token' });
+  jwt.verify(token, process.env.JWT_SECRET,{
+    algorithm: ['HS256'],
+    issuer: 'my-app',
+    audience: 'my-api'
+
+  }, (err, decoded) => {
+    if (err) return res.status(401).json({ message: 'Invalid or expired token' });
 
 
     req.user = {
@@ -26,12 +31,12 @@ const protect = (req, res, next) => {
 };
 
 const authorizeUser = (req, res, next) => {
-  if (req.user?.role !== 'user') return res.status(403).json({ message: 'Not authorized' });
+  if (req.user?.role !== 'user') return res.status(401).json({ message: 'Not authorized' });
   next();
 };
 
 const authorizePersonnel = (req, res, next) => {
-  if (req.user?.role !== 'personnel') return res.status(403).json({ message: 'Not authorized' });
+  if (req.user?.role !== 'personnel') return res.status(401).json({ message: 'Not authorized' });
   next();
 };
 
